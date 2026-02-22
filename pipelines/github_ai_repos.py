@@ -378,15 +378,27 @@ def run_pipeline(
         # Custom search queries
         run_pipeline(queries=["generative-ai", "stable-diffusion", "whisper"])
     """
+    # Configure destination
+    if destination == "motherduck":
+        token = os.getenv("MOTHERDUCK_TOKEN")
+        if not token:
+            raise ValueError("MOTHERDUCK_TOKEN environment variable not set")
+        # Create MotherDuck destination with credentials
+        dest = dlt.destinations.motherduck(f"md:///github_ai_analytics?token={token}")
+    else:
+        dest = destination
+    
     # Create pipeline
     pipeline = dlt.pipeline(
         pipeline_name="github_ai_trends",
-        destination=destination,
+        destination=dest,
         dataset_name="github_raw",
     )
     
     # Use default queries if none provided
     queries = queries or AI_QUERIES[:5]
+    
+    print(f"Running pipeline with {len(queries)} queries, max {max_repos_per_query} repos per query")
     
     # Create source with filters
     source = github_ai_source(
