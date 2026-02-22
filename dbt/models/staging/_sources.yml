@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: github_raw
-    database: github_ai_trends
+    database: github_ai_analytics
     schema: github_raw
     description: "Raw data ingested from GitHub API via dlt"
     
