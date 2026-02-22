@@ -89,9 +89,19 @@ jobs:
           rm -rf .evidence node_modules package-lock.json
           npm install
 
+      - name: Create MotherDuck connection
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          cd dashboard/sources/motherduck
+          echo "name: motherduck" > connection.yaml
+          echo "type: duckdb" >> connection.yaml
+          echo "options:" >> connection.yaml
+          echo "  filename: md:github_ai_analytics?motherduck_token=$MOTHERDUCK_TOKEN" >> connection.yaml
+          cat connection.yaml
+
       - name: Build dashboard
         env:
-          EVIDENCE_SOURCE__MOTHERDUCK__OPTIONS__FILENAME: md:github_ai_analytics?motherduck_token=${{ secrets.MOTHERDUCK_TOKEN }}
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd dashboard
