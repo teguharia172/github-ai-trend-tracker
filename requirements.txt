@@ -1,19 +1,17 @@
-# Data ingestion
-dlt[duckdb,parquet]==1.22.0
-duckdb==1.4.4
-requests==2.31.0
+# Data pipeline
+dlt[duckdb,parquet]>=1.20.0
+duckdb>=0.9.0
+requests>=2.30.0
 
 # Transformation
-dbt-core==1.10.0
-dbt-duckdb==1.9.0
+dbt-core>=1.8.0
+dbt-duckdb>=1.8.0
 
 # Dashboard
-plotly==5.18.0
-pandas==2.1.4
+streamlit>=1.28.0
+plotly>=5.15.0
+pandas>=2.0.0
 
 # Utilities
-python-dotenv==1.0.0
-python-dateutil==2.8.2
-
-# Development
-pytest==8.0.0
+python-dotenv>=1.0.0
+python-dateutil>=2.8.0

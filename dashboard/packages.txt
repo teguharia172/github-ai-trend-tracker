@@ -1,0 +1,2 @@
+# System dependencies for Streamlit Cloud
+# (empty - using pure Python packages)
