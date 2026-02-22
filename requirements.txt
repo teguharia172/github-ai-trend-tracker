@@ -3,12 +3,12 @@ dlt[duckdb]>=0.4.0
 requests>=2.31.0
 
 # Data warehouse
-duckdb>=0.10.0
+duckdb>=1.4.4  # Required for MotherDuck compatibility
 # motherduck package not needed - use duckdb with motherduck connection
 
 # Transformation
 dbt-core>=1.7.0
-dbt-duckdb>=1.7.0
+dbt-duckdb>=1.8.0  # Updated for DuckDB 1.4.4 compatibility
 elementary-data>=0.14.0
 
 # Orchestration
