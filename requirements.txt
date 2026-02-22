@@ -1,18 +1,19 @@
-# Core dependencies - pinned for reproducibility
-# GitHub AI Trend Tracker - Minimal Requirements
-
-# Data ingestion and loading
-dlt[duckdb,parquet]==1.22.0  # Includes pyarrow for parquet support
+# Data ingestion
+dlt[duckdb,parquet]==1.22.0
 duckdb==1.4.4
 requests==2.31.0
 
-# Data transformations
+# Transformation
 dbt-core==1.10.0
 dbt-duckdb==1.9.0
+
+# Dashboard
+plotly==5.18.0
+pandas==2.1.4
 
 # Utilities
 python-dotenv==1.0.0
 python-dateutil==2.8.2
 
-# Development (optional - remove for production if needed)
+# Development
 pytest==8.0.0

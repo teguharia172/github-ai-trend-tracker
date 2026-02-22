@@ -19,7 +19,6 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '20'
 
 jobs:
   ingest-data:
@@ -78,34 +77,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
 
-      - name: Install dashboard dependencies
+      - name: Install dependencies
         run: |
-          cd dashboard
-          rm -rf .evidence node_modules package-lock.json
-          npm install
-
-      - name: Create MotherDuck connection
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dashboard/sources/motherduck
-          echo "name: motherduck" > connection.yaml
-          echo "type: duckdb" >> connection.yaml
-          echo "options:" >> connection.yaml
-          echo "  filename: md:github_ai_analytics?motherduck_token=$MOTHERDUCK_TOKEN" >> connection.yaml
-          cat connection.yaml
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Build dashboard
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dashboard
-          npm run build
+          python app.py
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
