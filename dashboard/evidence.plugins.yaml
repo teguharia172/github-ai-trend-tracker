@@ -1,0 +1,10 @@
+components:
+  # This loads all of evidence's core components
+  # You probably don't want to edit this
+  - name: core-components
+    package: "@evidence-dev/core-components"
+
+datasources:
+  # You can add additional datasources here
+  - name: motherduck
+    package: "@evidence-dev/duckdb"

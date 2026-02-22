@@ -95,7 +95,6 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd dashboard
-          npm run sources
           npm run build
 
       - name: Upload artifact

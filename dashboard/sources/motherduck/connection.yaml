@@ -1,0 +1,10 @@
+name: motherduck
+
+type: duckdb
+
+options:
+  database: github_ai_analytics
+  
+environment:
+  - name: motherduck_token
+    value: "${MOTHERDUCK_TOKEN}"
