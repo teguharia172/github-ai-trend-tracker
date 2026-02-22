@@ -1,10 +1,9 @@
 components:
-  # This loads all of evidence's core components
-  # You probably don't want to edit this
-  - name: core-components
-    package: "@evidence-dev/core-components"
+  "@evidence-dev/core-components":
+    overrides: []
+    aliases: {}
+    provides: []
 
 datasources:
-  # You can add additional datasources here
-  - name: motherduck
-    package: "@evidence-dev/duckdb"
+  "@evidence-dev/duckdb":
+    overrides: []

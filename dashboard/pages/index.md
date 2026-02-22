@@ -10,6 +10,18 @@ Real-time analytics on AI open source projects from GitHub.
 
 ## 📊 Key Metrics
 
+```sql repo_stats
+SELECT * FROM prod_marts.dim_repositories
+```
+
+```sql language_trends
+SELECT * FROM prod_marts.fct_language_trends
+```
+
+```sql trending_repos
+SELECT * FROM prod_marts.fct_trending_repos
+```
+
 <Grid cols=4>
 
 <BigValue 

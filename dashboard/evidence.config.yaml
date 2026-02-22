@@ -1,15 +1,12 @@
 name: GitHub AI Trend Tracker
 title: GitHub AI Trend Tracker
 
-appearance:
-  logo: /logo.png
-  favicon: /favicon.ico
-  hideWaterMark: true
-
 plugins:
   components:
-    - name: core-components
-      package: "@evidence-dev/core-components"
+    "@evidence-dev/core-components":
+      overrides: []
+      aliases: {}
+      provides: []
   datasources:
-    - name: motherduck
-      package: "@evidence-dev/duckdb"
+    "@evidence-dev/duckdb":
+      overrides: []
