@@ -320,8 +320,7 @@ def main():
         """)
         
         st.markdown("---")
-        st.markdown(f"**Last Updated:**  
-{datetime.now().strftime('%Y-%m-%d %H:%M UTC')}")
+        st.markdown(f"**Last Updated:**  \n{datetime.now().strftime('%Y-%m-%d %H:%M UTC')}")
     
     # Main content
     st.title("GitHub AI Trend Tracker")
