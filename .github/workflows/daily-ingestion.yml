@@ -8,15 +8,6 @@ on:
   push:
     branches: [main]  # Also run on pushes to main
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 env:
   PYTHON_VERSION: '3.11'
 
@@ -67,50 +58,7 @@ jobs:
           dbt deps
           dbt build --target prod
 
-  build-dashboard:
-    name: Build Dashboard
-    needs: ingest-data
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
+      - name: Trigger Streamlit Cloud redeploy
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Build dashboard
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dashboard
-          python app.py
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dashboard/build
-
-  deploy-dashboard:
-    name: Deploy Dashboard to GitHub Pages
-    needs: build-dashboard
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          echo "✅ Data updated! Streamlit Cloud will auto-redeploy on next page load."
+          echo "Dashboard: https://github-ai-trend-tracker.streamlit.app"
