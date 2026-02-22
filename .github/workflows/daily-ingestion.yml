@@ -51,8 +51,8 @@ jobs:
           info = run_pipeline(
               destination='motherduck',
               queries=AI_QUERIES,
-              max_repos_per_query=50,
-              min_stars=50
+              max_repos_per_query=100,
+              min_stars=10
           )
           print('Ingestion complete!')
           print(info)
