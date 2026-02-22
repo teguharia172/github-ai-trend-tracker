@@ -2,9 +2,8 @@
 # GitHub AI Trend Tracker - Minimal Requirements
 
 # Data ingestion and loading
-dlt[duckdb,parquet]==1.22.0  # Added parquet support for pyarrow
+dlt[duckdb,parquet]==1.22.0  # Includes pyarrow for parquet support
 duckdb==1.4.4
-pyarrow==15.0.0
 requests==2.31.0
 
 # Data transformations
