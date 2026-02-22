@@ -1,0 +1,62 @@
+version: 2
+
+sources:
+  - name: github_raw
+    database: github_ai_trends
+    schema: github_raw
+    description: "Raw data ingested from GitHub API via dlt"
+    
+    tables:
+      - name: repositories
+        description: "GitHub repositories matching AI-related search queries"
+        columns:
+          - name: id
+            description: "Unique repository ID from GitHub"
+            tests:
+              - unique
+              - not_null
+          
+          - name: full_name
+            description: "Full repository name (owner/repo)"
+          
+          - name: name
+            description: "Repository name"
+          
+          - name: owner__login
+            description: "Repository owner username"
+          
+          - name: description
+            description: "Repository description"
+          
+          - name: html_url
+            description: "Repository URL"
+          
+          - name: stars
+            description: "Number of stars"
+          
+          - name: forks_count
+            description: "Number of forks"
+          
+          - name: open_issues_count
+            description: "Number of open issues"
+          
+          - name: language
+            description: "Primary programming language"
+          
+          - name: created_at
+            description: "Repository creation date"
+          
+          - name: updated_at
+            description: "Last update date"
+          
+          - name: pushed_at
+            description: "Last push date"
+          
+          - name: search_query
+            description: "Search query that found this repository"
+          
+          - name: _dlt_load_id
+            description: "dlt load batch ID"
+          
+          - name: _dlt_extracted_at
+            description: "Timestamp when data was extracted"

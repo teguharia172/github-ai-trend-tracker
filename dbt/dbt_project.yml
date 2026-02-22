@@ -1,0 +1,54 @@
+name: 'github_ai_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'github_ai_analytics'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+packages-install-path: "dbt_packages"
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  github_ai_analytics:
+    +materialized: view
+    +persist_docs:
+      relation: true
+      columns: true
+    
+    staging:
+      +materialized: view
+      +schema: staging
+      +tags: ["staging"]
+    
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+      +tags: ["intermediate"]
+    
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ["marts"]
+      
+      core:
+        +tags: ["core"]
+      
+      metrics:
+        +tags: ["metrics"]
+
+tests:
+  github_ai_analytics:
+    +severity: warn
+
+vars:
+  # Elementary vars
+  elementary_full_refresh: false

@@ -1,0 +1,27 @@
+{
+  "name": "github-ai-trend-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "evidence build",
+    "build:strict": "evidence build:strict",
+    "dev": "evidence dev --open false --host 0.0.0.0",
+    "preview": "evidence preview",
+    "sources": "evidence sources",
+    "sources:sync": "evidence sources sync"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@evidence-dev/core-components": "^4.0.0",
+    "@evidence-dev/csv": "^1.0.0",
+    "@evidence-dev/duckdb": "^1.0.0",
+    "@evidence-dev/evidence": "^39.0.0"
+  },
+  "overrides": {
+    "jsonwebtoken": "9.0.0",
+    "trim@<0.0.3": ">=0.0.3",
+    "sqlite3": "5.1.5"
+  }
+}

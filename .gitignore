@@ -1,0 +1,49 @@
+# Environment variables
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# DuckDB
+github_ai_analytics.duckdb
+*.duckdb
+*.duckdb.wal
+
+# dbt
+target/
+dbt_packages/
+logs/
+.dbt/
+
+# dlt
+.dlt/
+
+# Evidence
+dashboard/node_modules/
+dashboard/build/
+dashboard/.evidence/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prefect
+.prefect/
+
+# Logs
+*.log

@@ -1,0 +1,16 @@
+name: GitHub AI Trend Tracker
+title: GitHub AI Trend Tracker
+logo: /logo.png
+theme: default
+
+database: motherduck
+
+queries:
+  - name: repo_stats
+    run: select * from prod.dim_repositories
+  
+  - name: language_trends
+    run: select * from prod.fct_language_trends
+  
+  - name: trending_repos
+    run: select * from prod.fct_trending_repos

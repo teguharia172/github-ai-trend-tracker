@@ -1,0 +1,27 @@
+github_ai_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../github_ai_trends.duckdb"
+      schema: main
+      threads: 4
+    
+    prod:
+      type: duckdb
+      path: "md:github_ai_analytics"  # MotherDuck cloud database
+      schema: prod
+      threads: 4
+      extensions:
+        - httpfs
+        - parquet
+      settings:
+        motherduck_token: "{{ env_var('MOTHERDUCK_TOKEN') }}"
+        s3_region: us-east-1
+
+    # For GitHub Actions CI/CD
+    ci:
+      type: duckdb
+      path: ":memory:"
+      schema: ci_test
+      threads: 2

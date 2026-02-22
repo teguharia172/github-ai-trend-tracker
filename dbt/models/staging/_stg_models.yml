@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: stg_repositories
+    description: "Cleaned and standardized repository data from GitHub"
+    columns:
+      - name: repo_id
+        description: "Unique repository ID"
+        tests:
+          - unique
+          - not_null
+      
+      - name: full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - not_null
+      
+      - name: repo_name
+        description: "Repository name"
+      
+      - name: owner
+        description: "Repository owner"
+      
+      - name: description
+        description: "Repository description"
+      
+      - name: stars_count
+        description: "Number of stars"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: forks_count
+        description: "Number of forks"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: primary_language
+        description: "Primary programming language"
+      
+      - name: is_fork
+        description: "Whether the repo is a fork"
+      
+      - name: is_archived
+        description: "Whether the repo is archived"
+      
+      - name: created_at
+        description: "Repository creation date"
+      
+      - name: updated_at
+        description: "Last update date"
+      
+      - name: extracted_at
+        description: "When data was extracted"
+    
+    tests:
+      - dbt_utils.recency:
+          datepart: day
+          field: extracted_at
+          interval: 7
