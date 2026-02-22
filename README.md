@@ -1,178 +1,155 @@
 # 🚀 GitHub AI Trend Tracker
 
-Track trending AI/ML repositories from GitHub with automated daily ingestion and a live dashboard.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![dbt](https://img.shields.io/badge/dbt-1.10-orange.svg)](https://getdbt.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.29-FF4B4B.svg)](https://streamlit.io)
+[![MotherDuck](https://img.shields.io/badge/MotherDuck-🦆-yellow.svg)](https://motherduck.com)
 
-[![Daily Ingestion](https://github.com/YOUR_USERNAME/github-ai-trend-tracker/actions/workflows/daily-ingestion.yml/badge.svg)](https://github.com/YOUR_USERNAME/github-ai-trend-tracker/actions/workflows/daily-ingestion.yml)
-
-## 📊 What It Does
-
-- **Ingests** AI repository data from GitHub API daily
-- **Transforms** raw data into analytics-ready models using dbt
-- **Stores** everything in MotherDuck cloud database
-- **Visualizes** trends via an interactive dashboard
+A complete data pipeline that tracks AI/ML open source trends from GitHub, transforms the data with dbt, and visualizes it in a beautiful Streamlit dashboard.
 
 ## 🏗️ Architecture
 
 ```
-GitHub API → Python/dlt → MotherDuck Cloud → dbt → Dashboard
-     ↑___________________________|
-         (Daily via GitHub Actions)
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
+│ GitHub API  │────▶│  dlt (load)  │────▶│  MotherDuck │────▶│  Streamlit   │
+│             │     │              │     │   (DuckDB)  │     │  Dashboard   │
+└─────────────┘     └──────────────┘     └──────┬──────┘     └──────────────┘
+                                                 │
+                                          ┌──────┴──────┐
+                                          │ dbt (transform)
+                                          └─────────────┘
 ```
 
-**Tech Stack:**
-- **Ingestion**: Python + dlt (data loading tool)
-- **Orchestration**: GitHub Actions (free, runs daily)
-- **Database**: MotherDuck (cloud DuckDB, free tier)
-- **Transformations**: dbt (data build tool)
-- **Dashboard**: Evidence.dev
-- **CI/CD**: GitHub Actions (free tier)
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Ingestion** | dlt + Python | Extract from GitHub API |
+| **Database** | MotherDuck (DuckDB) | Cloud data warehouse |
+| **Transform** | dbt | Clean & model data |
+| **Dashboard** | Streamlit | Interactive visualization |
+| **Orchestration** | GitHub Actions | Daily scheduled runs |
 
-## 📁 Repository Structure
-
-```
-github-ai-trend-tracker/
-├── .github/workflows/          # CI/CD automation
-│   └── daily-ingestion.yml     # Runs pipeline daily
-├── dbt/                        # Data transformations
-│   ├── models/                 # SQL models (staging, intermediate, marts)
-│   └── profiles.yml            # Database connections
-├── dashboard/                  # Evidence dashboard
-│   ├── pages/
-│   │   └── index.md           # Dashboard definition
-│   └── evidence.config.yaml   # Dashboard config
-├── pipelines/                  # Data ingestion
-│   └── github_ai_repos.py     # Main pipeline code
-├── requirements.txt            # Python dependencies
-├── Makefile                    # Useful commands
-└── DEPLOYMENT.md              # Deployment guide
-```
-
-## 🚀 Quick Start (Local Development)
+## 🚀 Quick Start
 
 ### 1. Clone & Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/github-ai-trend-tracker.git
+git clone https://github.com/teguharia172/github-ai-trend-tracker.git
 cd github-ai-trend-tracker
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
-make setup
+pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configure Secrets
 
+Create `.env` file:
 ```bash
-# Copy example
-cp .env.example .env
-
-# Edit .env with your tokens:
-# GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
-# MOTHERDUCK_TOKEN=md_token_xxxxxxxx (optional for local)
+GH_TOKEN=your_github_personal_access_token
+MOTHERDUCK_TOKEN=your_motherduck_token
 ```
+
+Get tokens:
+- **GitHub Token**: https://github.com/settings/tokens (needs `public_repo` scope)
+- **MotherDuck Token**: https://app.motherduck.com → Settings → Tokens
 
 ### 3. Run Pipeline Locally
 
 ```bash
-# Run full pipeline (saves to local DuckDB)
-make pipeline
+# Ingest data
+python -c "
+from pipelines.github_ai_repos import run_pipeline, AI_QUERIES
+run_pipeline(
+    destination='motherduck',
+    queries=AI_QUERIES,
+    max_repos_per_query=100,
+    min_stars=10
+)
+"
 
-# Run dbt transformations
-make dbt-build
+# Transform data
+cd dbt
+dbt deps
+dbt build --target prod
+cd ..
 
-# Start dashboard
-make dashboard
+# Run dashboard
+cd dashboard
+streamlit run streamlit_app.py
 ```
 
-## ☁️ Deploy to Cloud
+Open http://localhost:8501
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete cloud deployment instructions.
+## 📊 Dashboard Features
 
-**Quick summary:**
-1. Sign up for [MotherDuck](https://app.motherduck.com/) (cloud DB)
-2. Sign up for [Prefect Cloud](https://app.prefect.cloud/) (scheduler)
-3. Add 2 secrets to GitHub repo settings
-4. Pipeline runs automatically every day!
+- **🔥 Trending**: Top repositories by velocity (stars/day)
+- **📊 Analytics**: Language statistics and interactive charts
+- **📋 Browse All**: Full repository list with filters
+- **🎨 Modern UI**: Dark theme with gradient accents
 
-## 📊 Data Model
+## 📁 Repository Structure
 
-### Raw Data (from GitHub API)
-- Repository metadata (stars, forks, language)
-- Search context (which query found it)
-- Timestamps
-
-### Analytics Models (dbt)
-| Model | Description |
-|-------|-------------|
-| `dim_repositories` | Clean repo dimension table |
-| `fct_trending_repos` | Growth metrics, velocity |
-| `fct_language_trends` | Language breakdown stats |
-
-### AI Categories
-- **LLMs** - GPT, Claude, Llama, etc.
-- **Agents & RAG** - LangChain, AutoGen, etc.
-- **Machine Learning** - Traditional ML
-- **Deep Learning Frameworks** - PyTorch, TensorFlow
-- **Infrastructure & Tools** - Vector DBs, MLOps
-- And more...
-
-## 🛠️ Available Commands
-
-```bash
-make help              # Show all commands
-make setup             # Install dependencies
-make pipeline          # Run data ingestion
-make dbt-run           # Run dbt models
-make dbt-test          # Run dbt tests
-make dbt-build         # Run models + tests
-make dashboard         # Start local dashboard
-make test              # Run Python tests
-make clean             # Clean up generated files
+```
+.
+├── .github/workflows/      # CI/CD automation
+├── dbt/                    # dbt transformations
+│   ├── models/             # SQL models
+│   └── profiles.yml        # DB connection
+├── dashboard/              # Streamlit dashboard
+│   ├── streamlit_app.py    # Main app
+│   └── requirements.txt    # Dashboard deps
+├── pipelines/              # Data ingestion
+│   └── github_ai_repos.py  # GitHub API pipeline
+├── requirements.txt        # Main dependencies
+└── README.md               # This file
 ```
 
-## 📈 Current Stats
+## 🔄 Automated Pipeline
 
-Tracking **1,079 AI repositories** across **31 programming languages** and **10 categories**.
+The pipeline runs daily at 2 AM UTC via GitHub Actions:
 
-**Top Categories:**
-- LLMs: 369 repos
-- Agents & RAG: 188 repos
-- Machine Learning: 129 repos
+1. **Ingest** → Fetches AI repos from GitHub Search API
+2. **Transform** → dbt models clean & aggregate data
+3. **Deploy** → Streamlit Cloud auto-updates
 
-**Top Languages:**
-- Python: 511 repos (53.8%)
-- TypeScript: 130 repos (12.6%)
-- Jupyter Notebook: 108 repos (10.6%)
+## 🛠️ Tech Stack
 
-## 🔑 Environment Variables
+| Layer | Tools |
+|-------|-------|
+| Ingestion | dlt, requests |
+| Warehouse | MotherDuck (DuckDB) |
+| Transform | dbt-core, dbt-duckdb |
+| Dashboard | Streamlit, Plotly, Pandas |
+| Orchestration | GitHub Actions |
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GH_TOKEN` | Yes | GitHub Personal Access Token |
-| `MOTHERDUCK_TOKEN` | For cloud | MotherDuck API token |
+## 📝 Data Models
 
+### Source Tables (raw)
+- `github_raw.repositories` → Fetched from GitHub API
 
-## 📚 Documentation
+### Mart Tables (transformed)
+- `dim_repositories` → Repository dimensions
+- `fct_language_trends` → Language statistics
+- `fct_trending_repos` → Trending repositories
 
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Cloud deployment guide
-- [dbt docs](dbt/README.md) - Data model documentation
-- [Pipeline docs](pipelines/README.md) - Ingestion code details
+## 🌐 Deployment
+
+### Streamlit Cloud (Recommended)
+1. Push to GitHub
+2. Connect repo at [share.streamlit.io](https://share.streamlit.io)
+3. Add secrets in Streamlit Cloud dashboard
+4. Deploy!
+
+### GitHub Actions
+Already configured in `.github/workflows/daily-ingestion.yml`
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit changes: `git commit -am 'Add new feature'`
-4. Push to branch: `git push origin feature/my-feature`
-5. Submit a pull request
+Issues and PRs welcome!
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file
-
----
-
-Built with ❤️ using open source tools
+MIT License - see LICENSE file
