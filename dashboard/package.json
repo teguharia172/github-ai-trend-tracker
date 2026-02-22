@@ -2,6 +2,7 @@
   "name": "github-ai-trend-tracker",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "evidence build",
     "build:strict": "evidence build:strict",

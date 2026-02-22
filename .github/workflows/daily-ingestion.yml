@@ -88,13 +88,16 @@ jobs:
       - name: Install dashboard dependencies
         run: |
           cd dashboard
-          npm ci
+          rm -rf .evidence node_modules package-lock.json
+          npm install
 
       - name: Build dashboard
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd dashboard
+          npm run sources
           npm run build
 
       - name: Upload artifact
