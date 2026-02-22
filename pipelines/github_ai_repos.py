@@ -86,7 +86,7 @@ AI_QUERIES = [
 
 def get_github_headers():
     """Get GitHub API headers with authentication."""
-    token = os.getenv("GITHUB_TOKEN")
+    token = os.getenv("GH_TOKEN")
     headers = {
         "Accept": "application/vnd.github.v3+json",
         "User-Agent": "github-ai-trend-tracker",

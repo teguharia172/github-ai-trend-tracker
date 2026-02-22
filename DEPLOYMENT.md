@@ -56,7 +56,7 @@ These tokens are stored securely in your repo:
 
 | Secret Name | Value |
 |-------------|-------|
-| `GITHUB_TOKEN` | Your GitHub token (ghp_xxx...) |
+| `GH_TOKEN` | Your GitHub token (ghp_xxx...) |
 | `MOTHERDUCK_TOKEN` | Your MotherDuck token |
 
 ---

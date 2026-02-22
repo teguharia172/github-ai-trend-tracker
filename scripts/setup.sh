@@ -36,7 +36,7 @@ if [ ! -f .env ]; then
     echo "📝 Creating .env file..."
     cp .env.example .env
     echo -e "${YELLOW}⚠️  Please edit .env and add your tokens:${NC}"
-    echo "   - GITHUB_TOKEN from https://github.com/settings/tokens"
+    echo "   - GH_TOKEN from https://github.com/settings/tokens"
     echo "   - MOTHERDUCK_TOKEN from https://app.motherduck.com/"
     echo ""
 fi

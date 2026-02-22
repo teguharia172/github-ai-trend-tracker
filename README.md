@@ -70,7 +70,7 @@ make setup
 cp .env.example .env
 
 # Edit .env with your tokens:
-# GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+# GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 # MOTHERDUCK_TOKEN=md_token_xxxxxxxx (optional for local)
 ```
 
@@ -151,7 +151,7 @@ Tracking **1,079 AI repositories** across **31 programming languages** and **10 
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token |
+| `GH_TOKEN` | Yes | GitHub Personal Access Token |
 | `MOTHERDUCK_TOKEN` | For cloud | MotherDuck API token |
 
 
