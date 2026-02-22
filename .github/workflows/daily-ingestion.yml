@@ -106,7 +106,7 @@ jobs:
     name: Deploy Dashboard to GitHub Pages
     needs: build-dashboard
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event.repository.has_pages
     
     environment:
       name: github-pages
