@@ -9,17 +9,11 @@ github_ai_analytics:
     
     prod:
       type: duckdb
-      path: "md:github_ai_analytics"  # MotherDuck cloud database
+      # MotherDuck connection - token via DUCKDB_MOTHERDUCK_TOKEN env var
+      path: "md:github_ai_analytics"
       schema: prod
       threads: 4
-      extensions:
-        - httpfs
-        - parquet
-      settings:
-        motherduck_token: "{{ env_var('MOTHERDUCK_TOKEN') }}"
-        s3_region: us-east-1
 
-    # For GitHub Actions CI/CD
     ci:
       type: duckdb
       path: ":memory:"

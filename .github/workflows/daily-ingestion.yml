@@ -62,6 +62,7 @@ jobs:
       - name: Run dbt transformations
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          DUCKDB_MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dbt
           dbt deps
