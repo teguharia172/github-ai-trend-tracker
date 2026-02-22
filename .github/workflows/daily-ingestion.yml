@@ -91,7 +91,7 @@ jobs:
 
       - name: Build dashboard
         env:
-          EVIDENCE_VAR__MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          EVIDENCE_SOURCE__MOTHERDUCK__OPTIONS__FILENAME: md:github_ai_analytics?motherduck_token=${{ secrets.MOTHERDUCK_TOKEN }}
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd dashboard

@@ -1,4 +1,4 @@
 name: motherduck
 type: duckdb
 options:
-  filename: md:github_ai_analytics?motherduck_token=${MOTHERDUCK_TOKEN}
+  filename: md:github_ai_analytics
