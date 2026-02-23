@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-GitHub AI Trend Tracker - Evidence-Style Clean Dashboard
-Design: Ultra-minimal, data-first aesthetic
+GitHub AI Trend Tracker - Clean Evidence-Style Dashboard
 """
 
 import os
@@ -26,27 +25,34 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# MINIMAL DESIGN - Override ALL Streamlit defaults
+# AGGRESSIVE RESET OF ALL STREAMLIT STYLES
 st.markdown("""
 <style>
-    /* === RESET ALL STREAMLIT DEFAULTS === */
-    .main .block-container {
-        padding: 2rem 3rem;
-        max-width: 1400px;
+    /* === FORCE WHITE BACKGROUND EVERYWHERE === */
+    html, body, [class*="css"] {
+        background-color: #ffffff !important;
     }
     
-    /* === BASE === */
+    .stApp {
+        background-color: #ffffff !important;
+    }
+    
     .main {
-        background: #ffffff;
-        color: #1a1a1a;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #ffffff !important;
+    }
+    
+    .block-container {
+        background-color: #ffffff !important;
+        padding: 2rem 3rem !important;
+        max-width: 1200px !important;
     }
     
     /* === HEADER === */
-    .dashboard-header {
-        margin-bottom: 3rem;
+    .header-container {
+        margin-bottom: 2.5rem;
         padding-bottom: 1.5rem;
         border-bottom: 1px solid #e5e5e5;
+        background: #ffffff !important;
     }
     
     .header-label {
@@ -55,7 +61,6 @@ st.markdown("""
         letter-spacing: 0.1em;
         color: #666;
         margin-bottom: 0.5rem;
-        font-weight: 500;
     }
     
     .header-title {
@@ -69,169 +74,18 @@ st.markdown("""
     .header-subtitle {
         font-size: 1rem;
         color: #666;
-        font-weight: 400;
     }
     
-    /* === METRICS ROW === */
-    .metrics-row {
-        display: flex;
-        gap: 2rem;
-        margin-bottom: 3rem;
-    }
-    
-    .metric-box {
-        flex: 1;
-    }
-    
-    .metric-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #888;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-    }
-    
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #111;
-        line-height: 1;
-    }
-    
-    /* === SECTIONS === */
-    .section {
-        margin-bottom: 3rem;
-    }
-    
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid #e5e5e5;
-    }
-    
-    .section-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #111;
-    }
-    
-    .section-subtitle {
-        font-size: 0.85rem;
-        color: #888;
-    }
-    
-    /* === DATA TABLE / LIST === */
-    .data-list {
-        border: 1px solid #e5e5e5;
-        background: #fff;
-    }
-    
-    .data-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background 0.1s;
-    }
-    
-    .data-row:last-child {
-        border-bottom: none;
-    }
-    
-    .data-row:hover {
-        background: #fafafa;
-    }
-    
-    .row-main {
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .row-title {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: #2563eb;
-        margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .row-title a {
-        color: #2563eb;
-        text-decoration: none;
-    }
-    
-    .row-title a:hover {
-        text-decoration: underline;
-    }
-    
-    .row-meta {
-        font-size: 0.8rem;
-        color: #888;
-    }
-    
-    .row-stats {
-        display: flex;
-        gap: 2rem;
-        text-align: right;
-    }
-    
-    .stat-group {
-        min-width: 80px;
-    }
-    
-    .stat-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #111;
-    }
-    
-    .stat-label {
-        font-size: 0.7rem;
-        color: #888;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .stat-highlight {
-        color: #16a34a;
-        font-weight: 600;
-    }
-    
-    /* === LANGUAGE LIST === */
-    .lang-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.875rem 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .lang-name {
-        font-weight: 500;
-        color: #111;
-    }
-    
-    .lang-count {
-        font-size: 0.85rem;
-        color: #666;
-    }
-    
-    /* === OVERRIDE STREAMLIT WIDGETS === */
+    /* === METRICS - NO BLUE BACKGROUNDS === */
     div[data-testid="stMetric"] {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
+        background-color: #ffffff !important;
+        border: 1px solid #e5e5e5 !important;
+        border-radius: 0 !important;
+        padding: 1.25rem !important;
     }
     
     div[data-testid="stMetric"] > div {
-        background: transparent !important;
+        background-color: transparent !important;
     }
     
     div[data-testid="stMetric"] label {
@@ -242,75 +96,173 @@ st.markdown("""
         font-weight: 500 !important;
     }
     
-    div[data-testid="stMetric"] .css-1xarl3l {
-        font-size: 2rem !important;
+    div[data-testid="stMetric"] .css-1xarl3l,
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        font-size: 1.75rem !important;
         font-weight: 600 !important;
         color: #111 !important;
     }
     
-    /* Tabs - minimal */
-    .stTabs [data-baseweb="tab-list"] {
-        background: transparent;
+    /* === REPO CARDS WITH DESCRIPTION === */
+    .repo-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 1.25rem;
+        border: 1px solid #e5e5e5;
+        border-bottom: none;
+        background: #ffffff;
+    }
+    
+    .repo-card:last-child {
         border-bottom: 1px solid #e5e5e5;
-        gap: 0;
-        margin-bottom: 2rem;
+    }
+    
+    .repo-card:hover {
+        background: #fafafa;
+    }
+    
+    .repo-main {
+        flex: 1;
+        min-width: 0;
+        padding-right: 2rem;
+    }
+    
+    .repo-title {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #2563eb;
+        margin-bottom: 0.35rem;
+    }
+    
+    .repo-title a {
+        color: #2563eb;
+        text-decoration: none;
+    }
+    
+    .repo-title a:hover {
+        text-decoration: underline;
+    }
+    
+    .repo-desc {
+        font-size: 0.9rem;
+        color: #444;
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .repo-meta {
+        font-size: 0.8rem;
+        color: #888;
+    }
+    
+    .repo-stats {
+        text-align: right;
+        min-width: 100px;
+    }
+    
+    .repo-stat-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111;
+    }
+    
+    .repo-stat-label {
+        font-size: 0.7rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .repo-velocity {
+        color: #16a34a;
+        font-weight: 600;
+    }
+    
+    /* === TABS === */
+    .stTabs [data-baseweb="tab-list"] {
+        background: #ffffff !important;
+        border-bottom: 1px solid #e5e5e5 !important;
+        margin-bottom: 2rem !important;
     }
     
     .stTabs [data-baseweb="tab"] {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: #666;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        border-radius: 0;
-        padding: 0.75rem 1.25rem;
-        margin: 0;
+        background: #ffffff !important;
+        color: #666 !important;
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+        padding: 0.75rem 1.25rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
     }
     
     .stTabs [aria-selected="true"] {
         color: #111 !important;
         border-bottom-color: #111 !important;
-        background: transparent !important;
+        background: #ffffff !important;
     }
     
-    /* DataFrame - clean */
+    /* === TABLES === */
     div[data-testid="stDataFrame"] {
-        border: 1px solid #e5e5e5;
+        border: 1px solid #e5e5e5 !important;
+        background: #ffffff !important;
     }
     
     div[data-testid="stDataFrame"] th {
-        background: #fafafa;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #666;
-        border-bottom: 1px solid #e5e5e5;
-        padding: 0.75rem 1rem;
+        background: #fafafa !important;
+        color: #666 !important;
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        border-bottom: 1px solid #e5e5e5 !important;
     }
     
     div[data-testid="stDataFrame"] td {
-        font-size: 0.9rem;
-        color: #444;
-        border-bottom: 1px solid #f0f0f0;
-        padding: 0.75rem 1rem;
+        background: #ffffff !important;
+        color: #444 !important;
+        border-bottom: 1px solid #f0f0f0 !important;
     }
     
-    /* Sidebar */
+    /* === SIDEBAR === */
     [data-testid="stSidebar"] {
-        background: #fafafa;
-        border-right: 1px solid #e5e5e5;
+        background-color: #fafafa !important;
+        border-right: 1px solid #e5e5e5 !important;
     }
     
-    /* Footer */
+    [data-testid="stSidebar"] .stMarkdown {
+        background-color: transparent !important;
+    }
+    
+    /* === CHARTS === */
+    .stChart {
+        background: #ffffff !important;
+    }
+    
+    /* === SECTION HEADERS === */
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    /* === FOOTER === */
     .footer {
-        margin-top: 4rem;
+        margin-top: 3rem;
         padding-top: 2rem;
         border-top: 1px solid #e5e5e5;
         text-align: center;
         font-size: 0.8rem;
         color: #888;
+        background: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -374,7 +326,7 @@ def main():
         lang_filter = st.multiselect("Language", options=languages, default=[])
         
         status_opts = ["Very Active", "Active", "Moderate", "Stale"]
-        status_filter = st.multiselect("Activity", options=status_opts, default=["Very Active", "Active"])
+        status_filter = st.multiselect("Activity", options=status_opts, default=["Very Active", "Active", "Moderate"])
         
         min_stars = st.slider("Min Stars", 0, int(repos['stars_count'].max()), 0, 1000)
     
@@ -388,7 +340,7 @@ def main():
     
     # Header
     st.markdown(f"""
-    <div class="dashboard-header">
+    <div class="header-container">
         <div class="header-label">Analytics Dashboard</div>
         <div class="header-title">GitHub AI Trend Tracker</div>
         <div class="header-subtitle">
@@ -397,48 +349,42 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Metrics - using columns but styled cleanly
+    # Metrics
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Repositories", format_number(len(filtered)))
-    m2.metric("Total Stars", format_number(filtered['stars_count'].sum()))
-    m3.metric("Total Forks", format_number(filtered['forks_count'].sum()))
-    m4.metric("Languages", filtered['primary_language'].nunique())
+    m1.metric("REPOSITORIES", format_number(len(filtered)))
+    m2.metric("TOTAL STARS", format_number(filtered['stars_count'].sum()))
+    m3.metric("TOTAL FORKS", format_number(filtered['forks_count'].sum()))
+    m4.metric("LANGUAGES", filtered['primary_language'].nunique())
     
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Tabs
-    tab1, tab2, tab3 = st.tabs(["Trending", "Languages", "Browse"])
+    tab1, tab2, tab3 = st.tabs(["Trending", "Languages", "Browse All"])
     
     with tab1:
-        st.markdown("""
-        <div class="section">
-            <div class="section-header">
-                <span class="section-title">Trending by Velocity</span>
-                <span class="section-subtitle">Top performers by stars per day</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Trending by Velocity</div>', unsafe_allow_html=True)
         
-        for _, r in trending.head(20).iterrows():
+        for _, r in trending.head(15).iterrows():
+            desc = r.get('description', '') or 'No description available'
+            # Truncate description if too long
+            if len(desc) > 120:
+                desc = desc[:117] + "..."
+            
             st.markdown(f"""
-            <div class="data-row">
-                <div class="row-main">
-                    <div class="row-title">
+            <div class="repo-card">
+                <div class="repo-main">
+                    <div class="repo-title">
                         <a href="{r['html_url']}" target="_blank">{r['full_name']}</a>
                     </div>
-                    <div class="row-meta">
-                        {r['primary_language'] or 'Unknown'} • {r['activity_status']}
-                    </div>
+                    <div class="repo-desc">{desc}</div>
+                    <div class="repo-meta">{r['primary_language'] or 'Unknown'} • {r['activity_status']}</div>
                 </div>
-                <div class="row-stats">
-                    <div class="stat-group">
-                        <div class="stat-value">{format_number(r['stars_count'])}</div>
-                        <div class="stat-label">Stars</div>
-                    </div>
-                    <div class="stat-group">
-                        <div class="stat-value stat-highlight">+{r['stars_per_day']:.1f}</div>
-                        <div class="stat-label">/day</div>
-                    </div>
+                <div class="repo-stats">
+                    <div class="repo-stat-value">{format_number(r['stars_count'])}</div>
+                    <div class="repo-stat-label">stars</div>
+                    <br><br>
+                    <div class="repo-stat-value repo-velocity">+{r['stars_per_day']:.1f}</div>
+                    <div class="repo-stat-label">per day</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -447,44 +393,28 @@ def main():
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.markdown("""
-            <div class="section-header">
-                <span class="section-title">Language Distribution</span>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Language Distribution</div>', unsafe_allow_html=True)
             
-            chart_data = lang_trends.head(10).set_index('language')
-            st.bar_chart(
-                chart_data[['total_stars']], 
-                use_container_width=True,
-                height=350
-            )
+            # Sort chart data descending
+            chart_data = lang_trends.head(10).set_index('language')[['total_stars']]
+            # Ensure descending order
+            chart_data = chart_data.sort_values('total_stars', ascending=False)
+            
+            st.bar_chart(chart_data, use_container_width=True, height=400)
         
         with col2:
-            st.markdown("""
-            <div class="section-header">
-                <span class="section-title">Top Languages</span>
-            </div>
-            <div class="data-list">
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Top Languages</div>', unsafe_allow_html=True)
             
             for _, lang in lang_trends.head(10).iterrows():
                 st.markdown(f"""
-                <div class="lang-item">
-                    <span class="lang-name">{lang['language']}</span>
-                    <span class="lang-count">{lang['repo_count']} repos</span>
+                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0;">
+                    <span style="font-weight: 500; color: #111;">{lang['language']}</span>
+                    <span style="color: #666; font-size: 0.9rem;">{lang['repo_count']} repos • {format_number(lang['total_stars'])} ★</span>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
     
     with tab3:
-        st.markdown(f"""
-        <div class="section-header">
-            <span class="section-title">All Repositories</span>
-            <span class="section-subtitle">{len(filtered):,} results</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="section-title">All Repositories ({len(filtered):,})</div>', unsafe_allow_html=True)
         
         display_df = filtered[[
             'full_name', 'primary_language', 'stars_count', 
@@ -508,8 +438,7 @@ def main():
     # Footer
     st.markdown(f"""
     <div class="footer">
-        Last updated {datetime.now().strftime('%B %d, %Y at %H:%M UTC')} • 
-        {len(repos):,} repositories tracked
+        Last updated {datetime.now().strftime('%B %d, %Y at %H:%M UTC')} • {len(repos):,} repositories tracked
     </div>
     """, unsafe_allow_html=True)
 
