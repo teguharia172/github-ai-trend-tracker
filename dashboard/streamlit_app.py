@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-GitHub AI Trend Tracker - Professional Streamlit Dashboard
-Design: Retro-Futuristic / Cyber-Industrial
+GitHub AI Trend Tracker - Clean Editorial Dashboard
+Design: Refined Minimalism with Editorial Typography
 """
 
 import os
@@ -19,7 +19,6 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "duckdb", "--quiet"])
     import duckdb
 
-# Page configuration
 st.set_page_config(
     page_title="GitHub AI Trend Tracker",
     page_icon="◉",
@@ -27,33 +26,33 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# PROFESSIONAL DESIGN SYSTEM
-# Aesthetic: Retro-Futuristic / Cyber-Industrial
+# CLEAN EDITORIAL DESIGN SYSTEM
 st.markdown("""
 <style>
     /* === FONTS === */
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap');
     
     * { 
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Source Sans 3', sans-serif;
     }
     
     /* === COLOR SYSTEM === */
     :root {
-        --bg-primary: #0a0b0f;
-        --bg-secondary: #111318;
-        --bg-tertiary: #1a1d24;
-        --accent-cyan: #00d9ff;
-        --accent-electric: #00b4d8;
-        --accent-hot: #ff3864;
-        --text-primary: #f0f4f8;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        --border-subtle: rgba(0, 217, 255, 0.1);
-        --border-glow: rgba(0, 217, 255, 0.3);
+        --bg-primary: #fafafa;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f5f5f5;
+        --text-primary: #1a1a1a;
+        --text-secondary: #525252;
+        --text-muted: #737373;
+        --accent-primary: #0d7377;
+        --accent-secondary: #14919b;
+        --accent-light: #e8f4f4;
+        --border-light: #e5e5e5;
+        --border-medium: #d4d4d4;
+        --success: #16a34a;
+        --warning: #ca8a04;
     }
     
-    /* === BASE STYLES === */
     .main {
         background: var(--bg-primary);
         color: var(--text-primary);
@@ -61,372 +60,297 @@ st.markdown("""
     
     /* === HEADER === */
     .header-container {
-        background: linear-gradient(180deg, rgba(0, 217, 255, 0.03) 0%, transparent 100%);
-        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-light);
         padding: 3rem 0 2rem;
         margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
     }
     
-    .header-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
-        animation: scanline 4s linear infinite;
-    }
-    
-    @keyframes scanline {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+    .header-pretitle {
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent-primary);
+        margin-bottom: 0.5rem;
     }
     
     .header-title {
-        font-family: 'Outfit', sans-serif;
-        font-size: 3.5rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
+        font-family: 'Crimson Pro', serif;
+        font-size: 3rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin-bottom: 0.75rem;
     }
     
     .header-subtitle {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
+        font-family: 'Source Sans 3', sans-serif;
+        font-size: 1.125rem;
+        font-weight: 300;
+        color: var(--text-secondary);
+        line-height: 1.5;
     }
     
-    /* === METRIC CARDS === */
-    .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1.5rem;
-        margin-bottom: 3rem;
-    }
-    
-    div[data-testid="stMetric"] {
+    /* === METRICS === */
+    .metric-container {
         background: var(--bg-secondary);
-        border: 1px solid var(--border-subtle);
-        border-left: 3px solid var(--accent-cyan);
-        border-radius: 0;
+        border: 1px solid var(--border-light);
         padding: 1.5rem;
-        position: relative;
-        transition: all 0.3s ease;
+        height: 100%;
     }
     
-    div[data-testid="stMetric"]:hover {
-        border-color: var(--border-glow);
-        box-shadow: 0 0 30px rgba(0, 217, 255, 0.1);
-        transform: translateY(-2px);
-    }
-    
-    div[data-testid="stMetric"]::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, var(--accent-cyan), transparent);
-        opacity: 0.5;
-    }
-    
-    div[data-testid="stMetric"] label {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.7rem !important;
-        color: var(--text-muted) !important;
+    .metric-label {
+        font-size: 0.7rem;
+        font-weight: 600;
         letter-spacing: 0.15em;
         text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
     }
     
-    div[data-testid="stMetric"] .css-1xarl3l {
-        font-family: 'Outfit', sans-serif;
-        font-size: 2.5rem !important;
-        font-weight: 300 !important;
-        color: var(--text-primary) !important;
-        letter-spacing: -0.02em;
+    .metric-value {
+        font-family: 'Crimson Pro', serif;
+        font-size: 2.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metric-delta {
+        font-size: 0.875rem;
+        color: var(--success);
+        font-weight: 500;
     }
     
     /* === SECTION HEADERS === */
-    h2 {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--text-primary) !important;
+    .section-header {
+        display: flex;
+        align-items: baseline;
+        gap: 1rem;
         margin-bottom: 1.5rem;
         padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border-subtle);
-        position: relative;
+        border-bottom: 1px solid var(--border-light);
     }
     
-    h2::after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        width: 60px;
-        height: 1px;
-        background: var(--accent-cyan);
+    .section-title {
+        font-family: 'Crimson Pro', serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
     }
     
-    h3 {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: var(--text-secondary) !important;
-        margin-bottom: 1rem;
+    .section-count {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 400;
     }
     
     /* === REPO CARDS === */
-    .repo-card {
+    .repo-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .repo-item {
         background: var(--bg-secondary);
-        border: 1px solid var(--border-subtle);
-        padding: 1.25rem;
-        margin-bottom: 0.75rem;
-        position: relative;
-        transition: all 0.2s ease;
+        border: 1px solid var(--border-light);
+        padding: 1.25rem 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: start;
+        transition: all 0.15s ease;
     }
     
-    .repo-card::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: var(--accent-cyan);
-        opacity: 0;
-        transition: opacity 0.2s;
+    .repo-item:hover {
+        border-color: var(--border-medium);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     
-    .repo-card:hover {
-        background: var(--bg-tertiary);
-        border-color: var(--border-glow);
-        transform: translateX(4px);
-    }
-    
-    .repo-card:hover::before {
-        opacity: 1;
+    .repo-main {
+        min-width: 0;
     }
     
     .repo-name {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: 'Source Sans 3', sans-serif;
         font-size: 1rem;
-        font-weight: 500;
-        color: var(--accent-cyan);
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.01em;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .repo-name a {
-        color: var(--accent-cyan);
+        color: var(--accent-primary);
         text-decoration: none;
-        transition: color 0.2s;
     }
     
     .repo-name a:hover {
-        color: var(--text-primary);
-        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        text-decoration: underline;
     }
     
     .repo-desc {
-        color: var(--text-secondary);
         font-size: 0.9rem;
-        margin-bottom: 0.75rem;
-        line-height: 1.5;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
     .repo-meta {
         display: flex;
         gap: 1rem;
         align-items: center;
-        flex-wrap: wrap;
-    }
-    
-    .repo-stat {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--text-muted);
     }
     
-    .repo-stat strong {
+    .repo-lang {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    
+    .lang-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+    }
+    
+    .repo-stats {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        font-size: 0.875rem;
+    }
+    
+    .stat-item {
+        text-align: right;
+    }
+    
+    .stat-value {
+        font-family: 'Crimson Pro', serif;
+        font-size: 1.25rem;
+        font-weight: 600;
         color: var(--text-primary);
-        font-weight: 500;
+        line-height: 1;
     }
     
-    .lang-badge {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        background: rgba(0, 217, 255, 0.1);
-        color: var(--accent-cyan);
-        padding: 0.25rem 0.75rem;
-        border: 1px solid rgba(0, 217, 255, 0.2);
-        border-radius: 0;
-    }
-    
-    .velocity-badge {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        background: rgba(255, 56, 100, 0.1);
-        color: var(--accent-hot);
-        padding: 0.25rem 0.75rem;
-        border: 1px solid rgba(255, 56, 100, 0.2);
-    }
-    
-    .status-badge {
-        font-family: 'JetBrains Mono', monospace;
+    .stat-label {
         font-size: 0.7rem;
+        color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        padding: 0.2rem 0.5rem;
+        letter-spacing: 0.05em;
     }
     
-    .status-active {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-        border: 1px solid rgba(34, 197, 94, 0.3);
+    .velocity {
+        color: var(--accent-primary);
+        font-weight: 600;
     }
     
-    .status-moderate {
-        background: rgba(234, 179, 8, 0.1);
-        color: #eab308;
-        border: 1px solid rgba(234, 179, 8, 0.3);
-    }
-    
-    .status-stale {
-        background: rgba(100, 116, 139, 0.1);
-        color: #64748b;
-        border: 1px solid rgba(100, 116, 139, 0.3);
-    }
-    
-    /* === DATA TABLE === */
-    div[data-testid="stDataFrame"] {
+    /* === TABLES === */
+    .data-table {
         background: var(--bg-secondary);
-        border: 1px solid var(--border-subtle);
-        border-radius: 0;
+        border: 1px solid var(--border-light);
     }
     
-    div[data-testid="stDataFrame"] td {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        border-bottom: 1px solid var(--border-subtle);
+    div[data-testid="stDataFrame"] {
+        border: 1px solid var(--border-light);
     }
     
     div[data-testid="stDataFrame"] th {
-        font-family: 'Outfit', sans-serif;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--text-muted);
         background: var(--bg-tertiary);
-        border-bottom: 1px solid var(--border-glow);
+        border-bottom: 1px solid var(--border-medium);
+        padding: 0.75rem 1rem;
+    }
+    
+    div[data-testid="stDataFrame"] td {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-light);
+        padding: 0.875rem 1rem;
     }
     
     /* === TABS === */
     .stTabs [data-baseweb="tab-list"] {
         background: transparent;
-        border-bottom: 1px solid var(--border-subtle);
+        border-bottom: 1px solid var(--border-light);
         gap: 0;
+        margin-bottom: 2rem;
     }
     
     .stTabs [data-baseweb="tab"] {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 500;
         letter-spacing: 0.05em;
+        text-transform: uppercase;
         color: var(--text-muted);
         background: transparent;
         border: none;
         border-bottom: 2px solid transparent;
         border-radius: 0;
         padding: 1rem 1.5rem;
-        transition: all 0.2s;
+        transition: all 0.15s;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
         color: var(--text-primary);
-        background: rgba(0, 217, 255, 0.05);
+        background: var(--bg-tertiary);
     }
     
     .stTabs [aria-selected="true"] {
-        color: var(--accent-cyan) !important;
-        border-bottom-color: var(--accent-cyan) !important;
-        background: rgba(0, 217, 255, 0.08) !important;
+        color: var(--accent-primary) !important;
+        border-bottom-color: var(--accent-primary) !important;
+        background: var(--accent-light) !important;
     }
     
     /* === SIDEBAR === */
     [data-testid="stSidebar"] {
         background: var(--bg-secondary);
-        border-right: 1px solid var(--border-subtle);
+        border-right: 1px solid var(--border-light);
     }
     
-    [data-testid="stSidebar"] .stButton > button {
-        background: transparent;
-        border: 1px solid var(--accent-cyan);
-        color: var(--accent-cyan);
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stSlider label {
+        font-size: 0.7rem;
+        font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        border-radius: 0;
-        transition: all 0.2s;
-    }
-    
-    [data-testid="stSidebar"] .stButton > button:hover {
-        background: var(--accent-cyan);
-        color: var(--bg-primary);
+        color: var(--text-muted);
     }
     
     /* === FOOTER === */
     .footer {
+        margin-top: 4rem;
+        padding: 2rem 0;
+        border-top: 1px solid var(--border-light);
         text-align: center;
-        padding: 3rem 0;
-        margin-top: 3rem;
-        border-top: 1px solid var(--border-subtle);
     }
     
     .footer-text {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         color: var(--text-muted);
-        letter-spacing: 0.1em;
     }
     
-    /* === GLOW EFFECTS === */
-    .glow-text {
-        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
-    }
-    
-    /* === ANIMATED ELEMENTS === */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .animate-in {
-        animation: fadeInUp 0.6s ease-out forwards;
-    }
-    
-    /* === RESPONSIVE === */
-    @media (max-width: 768px) {
-        .metric-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .header-title {
-            font-size: 2rem;
-        }
-    }
+    /* === UTILITY === */
+    .text-muted { color: var(--text-muted); }
+    .text-secondary { color: var(--text-secondary); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -467,55 +391,34 @@ def load_data():
 
 def format_number(num):
     if num >= 1_000_000:
-        return f"{num/1_000_000:.1f}M"
+        return f"{num/1_000_000:.2f}M"
     elif num >= 1_000:
         return f"{num/1_000:.1f}K"
     return str(num)
 
 
-def get_status_class(status):
-    if status == 'Very Active':
-        return 'status-active'
-    elif status == 'Active':
-        return 'status-moderate'
-    return 'status-stale'
-
-
 def main():
-    # Sidebar filters
+    # Load data
+    try:
+        repos, lang_trends, trending = load_data()
+    except Exception as e:
+        st.error(f"Failed to load data: {e}")
+        return
+    
+    # Sidebar
     with st.sidebar:
-        st.title("◉ CONTROL")
-        st.markdown("---")
+        st.markdown("### Filters")
         
-        # Load data for filters
-        try:
-            repos, lang_trends, trending = load_data()
-            languages = sorted(repos['primary_language'].dropna().unique())
-            
-            lang_filter = st.multiselect(
-                "LANGUAGE",
-                options=languages,
-                default=[],
-                format_func=lambda x: x.upper()
-            )
-            
-            status_filter = st.multiselect(
-                "ACTIVITY",
-                options=["Very Active", "Active", "Moderate", "Stale"],
-                default=["Very Active", "Active", "Moderate"]
-            )
-            
-            min_stars = st.slider(
-                "MIN STARS",
-                min_value=0,
-                max_value=int(repos['stars_count'].max()),
-                value=0,
-                step=1000,
-                format="%d ★"
-            )
-        except:
-            st.error("Connection failed")
-            return
+        languages = sorted(repos['primary_language'].dropna().unique())
+        lang_filter = st.multiselect("Language", options=languages, default=[])
+        
+        status_filter = st.multiselect(
+            "Activity",
+            options=["Very Active", "Active", "Moderate", "Stale"],
+            default=["Very Active", "Active", "Moderate"]
+        )
+        
+        min_stars = st.slider("Min Stars", 0, int(repos['stars_count'].max()), 0, 1000)
     
     # Apply filters
     filtered = repos.copy()
@@ -528,89 +431,139 @@ def main():
     # Header
     st.markdown("""
     <div class="header-container">
+        <div class="header-pretitle">Analytics Dashboard</div>
         <div class="header-title">GitHub AI Trend Tracker</div>
-        <div class="header-subtitle">Real-time Analytics // Open Source Intelligence</div>
+        <div class="header-subtitle">Tracking {0:,} open source AI/ML repositories across {1} programming languages</div>
     </div>
-    """, unsafe_allow_html=True)
+    """.format(len(repos), repos['primary_language'].nunique()), unsafe_allow_html=True)
     
     # Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("REPOSITORIES", f"{len(filtered):,}")
-    with c2:
-        st.metric("TOTAL STARS", format_number(filtered['stars_count'].sum()))
-    with c3:
-        st.metric("TOTAL FORKS", format_number(filtered['forks_count'].sum()))
-    with c4:
-        st.metric("LANGUAGES", filtered['primary_language'].nunique())
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-label">Repositories</div>
+            <div class="metric-value">{format_number(len(filtered))}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-label">Total Stars</div>
+            <div class="metric-value">{format_number(filtered['stars_count'].sum())}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-label">Total Forks</div>
+            <div class="metric-value">{format_number(filtered['forks_count'].sum())}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-label">Languages</div>
+            <div class="metric-value">{filtered['primary_language'].nunique()}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Tabs
-    tab1, tab2, tab3 = st.tabs(["◉ TRENDING", "◉ ANALYTICS", "◉ DATABASE"])
+    tab1, tab2, tab3 = st.tabs(["Trending", "Languages", "Browse All"])
     
     with tab1:
-        st.markdown("<h2>Velocity Leaders</h2>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="section-header">
+            <span class="section-title">Trending by Velocity</span>
+            <span class="section-count">Top performers by stars per day</span>
+        </div>
+        """, unsafe_allow_html=True)
         
-        for _, r in trending.head(12).iterrows():
-            status_class = get_status_class(r['activity_status'])
-            
+        for _, r in trending.head(15).iterrows():
             st.markdown(f"""
-            <div class="repo-card">
-                <div class="repo-name">
-                    <a href="{r['html_url']}" target="_blank">{r['full_name']}</a>
+            <div class="repo-item">
+                <div class="repo-main">
+                    <div class="repo-name">
+                        <a href="{r['html_url']}" target="_blank">{r['full_name']}</a>
+                    </div>
+                    <div class="repo-desc">{r.get('description', '') or 'No description'}</div>
+                    <div class="repo-meta">
+                        <span class="repo-lang"><span class="lang-dot"></span>{r['primary_language'] or 'Unknown'}</span>
+                        <span>{r['activity_status']}</span>
+                    </div>
                 </div>
-                <div class="repo-desc">{r.get('description', 'No description available') or 'No description available'}</div>
-                <div class="repo-meta">
-                    <span class="lang-badge">{r['primary_language'] or 'N/A'}</span>
-                    <span class="repo-stat"><strong>{format_number(r['stars_count'])}</strong> ★</span>
-                    <span class="velocity-badge">+{r['stars_per_day']:.1f}/day</span>
-                    <span class="status-badge {status_class}">{r['activity_status'].upper()}</span>
+                <div class="repo-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{format_number(r['stars_count'])}</div>
+                        <div class="stat-label">stars</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value velocity">+{r['stars_per_day']:.1f}</div>
+                        <div class="stat-label">per day</div>
+                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
     
     with tab2:
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.markdown("<h3>Language Dominance</h3>", unsafe_allow_html=True)
-            chart_data = lang_trends.head(8).set_index('language')['total_stars']
-            st.bar_chart(chart_data, use_container_width=True, height=300)
+            st.markdown("""
+            <div class="section-header">
+                <span class="section-title">Language Distribution</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            chart_data = lang_trends.head(10).set_index('language')
+            st.bar_chart(chart_data[['total_stars', 'repo_count']], use_container_width=True, height=400)
         
         with col2:
-            st.markdown("<h3>Repository Distribution</h3>", unsafe_allow_html=True)
-            chart_data = lang_trends.head(8).set_index('language')['repo_count']
-            st.bar_chart(chart_data, use_container_width=True, height=300)
-        
-        st.markdown("<h3>Language Statistics</h3>", unsafe_allow_html=True)
-        display_cols = ['language', 'repo_count', 'total_stars', 'avg_stars', 'avg_stars_per_day']
-        st.dataframe(
-            lang_trends[display_cols].head(12),
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "language": st.column_config.TextColumn("LANGUAGE"),
-                "repo_count": st.column_config.NumberColumn("REPOS", format="%d"),
-                "total_stars": st.column_config.NumberColumn("STARS", format="%d"),
-                "avg_stars": st.column_config.NumberColumn("AVG", format="%.0f"),
-                "avg_stars_per_day": st.column_config.NumberColumn("VEL/DAY", format="%.1f")
-            }
-        )
+            st.markdown("""
+            <div class="section-header">
+                <span class="section-title">Statistics</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            for _, lang in lang_trends.head(8).iterrows():
+                st.markdown(f"""
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e5e5;">
+                    <div style="font-weight: 600; color: #1a1a1a; margin-bottom: 0.25rem;">
+                        {lang['language']}
+                    </div>
+                    <div style="font-size: 0.85rem; color: #737373;">
+                        {lang['repo_count']} repos · {format_number(lang['total_stars'])} stars
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     
     with tab3:
-        st.markdown(f"<h2>Repository Database ({len(filtered)} records)</h2>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="section-header">
+            <span class="section-title">All Repositories</span>
+            <span class="section-count">{len(filtered):,} results</span>
+        </div>
+        """, unsafe_allow_html=True)
         
-        display_df = filtered[['full_name', 'primary_language', 'stars_count', 'forks_count', 'activity_status']].copy()
-        display_df.columns = ['REPOSITORY', 'LANG', 'STARS', 'FORKS', 'STATUS']
+        display_df = filtered[['full_name', 'primary_language', 'stars_count', 'forks_count', 'open_issues_count', 'activity_status']].copy()
+        display_df.columns = ['Repository', 'Language', 'Stars', 'Forks', 'Issues', 'Status']
         
         st.dataframe(
             display_df,
             use_container_width=True,
             hide_index=True,
             column_config={
-                "REPOSITORY": st.column_config.TextColumn(width="large"),
-                "LANG": st.column_config.TextColumn(width="small"),
-                "STARS": st.column_config.NumberColumn(format="%d ★"),
-                "FORKS": st.column_config.NumberColumn(format="%d"),
+                "Repository": st.column_config.TextColumn(width="large"),
+                "Language": st.column_config.TextColumn(width="small"),
+                "Stars": st.column_config.NumberColumn(format="%d", width="small"),
+                "Forks": st.column_config.NumberColumn(format="%d", width="small"),
+                "Issues": st.column_config.NumberColumn(format="%d", width="small"),
             }
         )
     
@@ -618,9 +571,8 @@ def main():
     st.markdown(f"""
     <div class="footer">
         <div class="footer-text">
-            LAST SYNC: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')} // 
-            DATA SOURCE: GitHub API via MotherDuck // 
-            {len(repos):,} REPOSITORIES TRACKED
+            Last updated {datetime.now().strftime('%B %d, %Y at %H:%M UTC')} · 
+            {len(repos):,} repositories tracked
         </div>
     </div>
     """, unsafe_allow_html=True)
