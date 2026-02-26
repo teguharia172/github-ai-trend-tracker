@@ -3,12 +3,14 @@
     materialized = 'incremental',
     tags = ['marts', 'metrics', 'star_history'],
     unique_key = ['repo_id', 'snapshot_date'],
-    incremental_strategy = 'merge'
+    incremental_strategy = 'merge',
+    merge_update_columns = ['stars_count', 'snapshot_time', 'extracted_at', 'previous_stars', 'stars_gained_1d']
   )
 }}
 
 -- Daily snapshot of repository star counts
 -- Tracks actual star growth over time for accurate velocity metrics
+-- IDEMPOTENT: One snapshot per day, but updates to latest values on re-runs
 
 with current_data as (
     select
@@ -16,12 +18,13 @@ with current_data as (
         full_name,
         stars_count,
         current_date as snapshot_date,
+        current_timestamp as snapshot_time,
         extracted_at
     from {{ ref('int_repo_growth_metrics') }}
 ),
 
 {% if is_incremental() %}
--- Get yesterday's snapshot for comparison (only in incremental mode)
+-- Get yesterday's snapshot for comparison
 previous_snapshot as (
     select
         repo_id,
@@ -48,6 +51,7 @@ calculated as (
         c.full_name,
         c.stars_count,
         c.snapshot_date,
+        c.snapshot_time,
         c.extracted_at,
         
         -- Previous snapshot
@@ -65,8 +69,3 @@ calculated as (
 )
 
 select * from calculated
-
-{% if is_incremental() %}
--- Only insert/update today's snapshot
-where snapshot_date = current_date
-{% endif %}
