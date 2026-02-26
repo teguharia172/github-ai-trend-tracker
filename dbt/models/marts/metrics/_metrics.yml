@@ -1,0 +1,102 @@
+version: 2
+
+models:
+  - name: fct_repo_star_history
+    description: |
+      Daily snapshot of repository star counts.
+      
+      Tracks actual star growth over time by capturing the star count
+      for each repository every day. This enables calculating true
+      velocity metrics (daily, weekly, monthly) instead of lifetime averages.
+      
+      ### Grain
+      - One row per repository per day
+      - Primary key: repo_id + snapshot_date
+      
+      ### Update Frequency
+      - Incremental: Updates daily with current snapshot
+      
+      ### Key Metrics
+      - `stars_gained_1d`: Actual stars gained since yesterday
+    
+    columns:
+      - name: repo_id
+        description: GitHub repository ID
+        tests:
+          - not_null
+      
+      - name: full_name
+        description: Repository full name (owner/repo)
+        tests:
+          - not_null
+      
+      - name: stars_count
+        description: Total stars at snapshot time
+        tests:
+          - not_null
+      
+      - name: snapshot_date
+        description: Date of the snapshot
+        tests:
+          - not_null
+      
+      - name: stars_gained_1d
+        description: Stars gained since yesterday's snapshot
+  
+  - name: fct_repo_star_growth
+    description: |
+      Actual star growth metrics over multiple time periods.
+      
+      Calculates real star velocity using daily snapshots:
+      - 1-day: Stars gained yesterday
+      - 7-day: Stars gained in last week
+      - 30-day: Stars gained in last month
+      
+      Unlike the lifetime average (stars / age), these metrics show
+      actual recent momentum.
+      
+      ### Grain
+      - One row per repository (current day only)
+    
+    columns:
+      - name: repo_id
+        description: GitHub repository ID
+        tests:
+          - not_null
+          - unique
+      
+      - name: full_name
+        description: Repository full name
+        tests:
+          - not_null
+      
+      - name: current_stars
+        description: Current total star count
+        tests:
+          - not_null
+      
+      - name: stars_gained_1d
+        description: Stars gained in the last 24 hours
+      
+      - name: stars_gained_7d
+        description: Stars gained in the last 7 days
+      
+      - name: stars_gained_30d
+        description: Stars gained in the last 30 days
+      
+      - name: avg_daily_stars_7d
+        description: Average stars per day over last 7 days
+      
+      - name: avg_daily_stars_30d
+        description: Average stars per day over last 30 days
+  
+  - name: fct_trending_repos
+    description: |
+      Trending AI repositories ranked by velocity and popularity.
+      
+      ### Grain
+      - One row per repository
+      
+      ### Ranking
+      - `rank_by_velocity`: Rank by 7-day star growth (actual)
+      - `rank_in_category`: Rank by total stars within AI category

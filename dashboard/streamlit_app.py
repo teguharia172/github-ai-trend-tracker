@@ -303,10 +303,14 @@ def load_data():
 
 
 def format_number(num):
+    """Format number for display - use exact count for smaller numbers"""
     if num >= 1_000_000:
         return f"{num/1_000_000:.2f}M"
-    elif num >= 1_000:
+    elif num >= 10_000:
         return f"{num/1_000:.1f}K"
+    elif num >= 1_000:
+        # Show exact number with comma for thousands (e.g., "2,561")
+        return f"{num:,}"
     return str(num)
 
 
@@ -349,12 +353,18 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Metrics
+    # Metrics - always show TOTALS from database (not filtered)
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("REPOSITORIES", format_number(len(filtered)))
-    m2.metric("TOTAL STARS", format_number(filtered['stars_count'].sum()))
-    m3.metric("TOTAL FORKS", format_number(filtered['forks_count'].sum()))
-    m4.metric("LANGUAGES", filtered['primary_language'].nunique())
+    total_repos = len(repos)
+    total_stars = repos['stars_count'].sum()
+    total_forks = repos['forks_count'].sum()
+    total_languages = repos['primary_language'].nunique()
+    
+    # Always show the real database totals (not affected by filters)
+    m1.metric("REPOSITORIES", format_number(total_repos))
+    m2.metric("TOTAL STARS", format_number(total_stars))
+    m3.metric("TOTAL FORKS", format_number(total_forks))
+    m4.metric("LANGUAGES", total_languages)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -370,6 +380,15 @@ def main():
             if len(desc) > 120:
                 desc = desc[:117] + "..."
             
+            # Use ACTUAL 1-day star growth if available, fallback to lifetime average
+            stars_gained_1d = r.get('stars_gained_1d')
+            if stars_gained_1d and not pd.isna(stars_gained_1d):
+                daily_stars = stars_gained_1d
+                velocity_label = "new stars today"
+            else:
+                daily_stars = r.get('stars_per_day', 0)
+                velocity_label = "avg/day (lifetime)"
+            
             st.markdown(f"""
             <div class="repo-card">
                 <div class="repo-main">
@@ -383,8 +402,8 @@ def main():
                     <div class="repo-stat-value">{format_number(r['stars_count'])}</div>
                     <div class="repo-stat-label">stars</div>
                     <br><br>
-                    <div class="repo-stat-value repo-velocity">+{r['stars_per_day']:.1f}</div>
-                    <div class="repo-stat-label">per day</div>
+                    <div class="repo-stat-value repo-velocity">+{daily_stars:.0f}</div>
+                    <div class="repo-stat-label">{velocity_label}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)

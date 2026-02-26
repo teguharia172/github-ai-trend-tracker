@@ -2,7 +2,9 @@ version: 2
 
 sources:
   - name: github_raw
-    database: github_ai_analytics
+    # Database is set via dbt profile/target
+    # Use 'github_ai_analytics' for MotherDuck production
+    # Use default (none) for local DuckDB development
     schema: github_raw
     description: "Raw data ingested from GitHub API via dlt"
     

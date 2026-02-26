@@ -5,28 +5,48 @@
   )
 }}
 
+-- Trending repos with ACTUAL star growth metrics (not lifetime average)
+
 with repos as (
     select * from {{ ref('int_repo_growth_metrics') }}
 ),
 
+star_growth as (
+    select 
+        repo_id,
+        stars_gained_1d,
+        stars_gained_7d,
+        stars_gained_30d,
+        avg_daily_stars_7d,
+        avg_daily_stars_30d
+    from {{ ref('fct_repo_star_growth') }}
+),
+
 categorized as (
     select
-        *,
+        r.*,
+        sg.stars_gained_1d,
+        sg.stars_gained_7d,
+        sg.stars_gained_30d,
+        sg.avg_daily_stars_7d,
+        sg.avg_daily_stars_30d,
+        
         -- AI category based on search query
         case
-            when search_query in ('llm', 'large-language-model', 'langchain', 'openai') 
+            when r.search_query in ('llm', 'large-language-model', 'langchain', 'openai') 
                 then 'LLMs & Agents'
-            when search_query in ('machine-learning', 'deep-learning', 'neural-network') 
+            when r.search_query in ('machine-learning', 'deep-learning', 'neural-network') 
                 then 'Machine Learning'
-            when search_query in ('nlp', 'natural-language-processing', 'transformers') 
+            when r.search_query in ('nlp', 'natural-language-processing', 'transformers') 
                 then 'NLP'
-            when search_query in ('computer-vision') 
+            when r.search_query in ('computer-vision') 
                 then 'Computer Vision'
-            when search_query in ('pytorch', 'tensorflow') 
+            when r.search_query in ('pytorch', 'tensorflow') 
                 then 'Frameworks'
             else 'Other AI'
         end as ai_category
-    from repos
+    from repos r
+    left join star_growth sg on r.repo_id = sg.repo_id
 )
 
 select
@@ -43,10 +63,17 @@ select
     ai_category,
     search_query,
     
-    -- Popularity metrics
+    -- Popularity metrics (backward compatibility)
     stars_count,
     popularity_tier,
     stars_per_day,
+    
+    -- ACTUAL star growth metrics (new)
+    stars_gained_1d,
+    stars_gained_7d,
+    stars_gained_30d,
+    avg_daily_stars_7d,
+    avg_daily_stars_30d,
     
     -- Activity metrics
     activity_status,
@@ -58,9 +85,11 @@ select
     pushed_at,
     extracted_at,
     
-    -- Ranking within category
+    -- Ranking within category (by total stars)
     row_number() over (partition by ai_category order by stars_count desc) as rank_in_category,
-    row_number() over (order by stars_per_day desc nulls last) as rank_by_velocity
+    
+    -- Ranking by ACTUAL velocity (1-day growth, not lifetime average)
+    row_number() over (order by stars_gained_1d desc nulls last) as rank_by_velocity
     
 from categorized
 order by stars_count desc
