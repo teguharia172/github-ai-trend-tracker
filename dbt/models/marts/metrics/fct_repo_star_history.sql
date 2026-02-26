@@ -4,7 +4,12 @@
     tags = ['marts', 'metrics', 'star_history'],
     unique_key = ['repo_id', 'snapshot_date'],
     incremental_strategy = 'merge',
-    merge_update_columns = ['stars_count', 'snapshot_time', 'extracted_at', 'previous_stars', 'stars_gained_1d']
+    merge_update_columns = ['stars_count', 'snapshot_time', 'extracted_at', 'previous_stars', 'stars_gained_1d'],
+    pre_hook = "
+      {% if is_incremental() %}
+        ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS snapshot_time TIMESTAMP;
+      {% endif %}
+    "
   )
 }}
 
