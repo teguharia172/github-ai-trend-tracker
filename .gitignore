@@ -31,6 +31,9 @@ dashboard/node_modules/
 dashboard/build/
 dashboard/.evidence/
 
+# Claude Code
+.claude/
+
 # IDEs
 .vscode/
 .idea/

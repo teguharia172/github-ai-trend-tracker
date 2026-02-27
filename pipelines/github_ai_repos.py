@@ -11,17 +11,17 @@ Data sources:
 - Contributors
 - Release information
 
-AI Topics covered: machine-learning, deep-learning, llm, ai, 
+AI Topics covered: machine-learning, deep-learning, llm, ai,
 artificial-intelligence, neural-network, nlp, computer-vision, etc.
 """
 
-import dlt
-from dlt.sources.rest_api import rest_api_source
-from dlt.sources.rest_api.typing import RESTAPIConfig
-from datetime import datetime, timedelta
-import requests
-from typing import Iterator, Dict, Any, List
 import os
+from collections.abc import Iterator
+from datetime import datetime
+from typing import Any
+
+import dlt
+import requests
 
 # AI-related search queries
 # These are GitHub search queries (NOT regex). Supports GitHub search qualifiers:
@@ -43,7 +43,6 @@ AI_QUERIES = [
     "natural-language-processing",
     "computer-vision",
     "multimodal-ai",  # Handles text, image, video, audio
-
     # Large Language Models (updated with 2026 leaders)
     "gpt-5",
     "claude-opus",
@@ -56,7 +55,6 @@ AI_QUERIES = [
     "glm-4",
     "mistral-lechat",  # Includes rising Chinese/open models
     "open-source-llm",
-
     # Frameworks & Tools (expanded for agentic/RAG/MLOps)
     "transformers",
     "pytorch",
@@ -75,12 +73,11 @@ AI_QUERIES = [
     "vector-database",
     "rag",  # Retrieval-augmented generation
     "agentic-ai",  # Autonomous agents, top 2026 trend
-
     # Emerging Trends (2026-specific)
     "mlops",  # Production pipelines
     "fine-tuning",
     "lora-peft",  # Efficient tuning
-    "open-source-llm"  # Granite, Olmo, etc.
+    "open-source-llm",  # Granite, Olmo, etc.
 ]
 
 
@@ -97,18 +94,18 @@ def get_github_headers():
 
 
 def search_repositories(
-    query: str, 
-    sort: str = "stars", 
-    order: str = "desc", 
+    query: str,
+    sort: str = "stars",
+    order: str = "desc",
     per_page: int = 100,
-    min_stars: int = 100,           # Minimum stars filter
-    language: str = None,            # Filter by language (e.g., "python", "go")
-    created_after: str = None,       # Filter by creation date (e.g., "2024-01-01")
-    pushed_after: str = None,        # Filter by last push date
-) -> Iterator[Dict[str, Any]]:
+    min_stars: int = 100,  # Minimum stars filter
+    language: str = None,  # Filter by language (e.g., "python", "go")
+    created_after: str = None,  # Filter by creation date (e.g., "2024-01-01")
+    pushed_after: str = None,  # Filter by last push date
+) -> Iterator[dict[str, Any]]:
     """
     Search GitHub repositories by query.
-    
+
     Args:
         query: Search term (topic, keyword, etc.)
         sort: Sort field (stars, forks, updated, etc.)
@@ -118,16 +115,16 @@ def search_repositories(
         language: Filter by programming language (e.g., "python")
         created_after: Only repos created after this date (YYYY-MM-DD)
         pushed_after: Only repos pushed after this date (YYYY-MM-DD)
-    
+
     GitHub Search API has rate limits:
     - Authenticated: 30 requests per minute
     - Unauthenticated: 10 requests per minute
-    
+
     Full search syntax: https://docs.github.com/en/search-github/searching-on-github/searching-for-repositories
     """
     url = "https://api.github.com/search/repositories"
     headers = get_github_headers()
-    
+
     # Build the search query with qualifiers
     search_query = f"{query} stars:>{min_stars}"
     if language:
@@ -136,65 +133,66 @@ def search_repositories(
         search_query += f" created:>{created_after}"
     if pushed_after:
         search_query += f" pushed:>{pushed_after}"
-    
+
     params = {
         "q": search_query,
         "sort": sort,
         "order": order,
         "per_page": per_page,
     }
-    
+
     page = 1
     max_pages = 10  # Limit to 1000 results (GitHub's max)
-    
+
     while page <= max_pages:
         params["page"] = page
         response = requests.get(url, headers=headers, params=params)
-        
+
         if response.status_code == 403:
             # Rate limited
             reset_time = int(response.headers.get("X-RateLimit-Reset", 0))
             wait_time = max(reset_time - int(datetime.now().timestamp()), 0) + 1
             print(f"Rate limited. Waiting {wait_time} seconds...")
             import time
+
             time.sleep(wait_time)
             continue
-        
+
         response.raise_for_status()
         data = response.json()
-        
+
         items = data.get("items", [])
         if not items:
             break
-        
+
         for item in items:
             # Enrich with query info
             item["search_query"] = query
             item["_dlt_extracted_at"] = datetime.utcnow().isoformat()
             yield item
-        
+
         # Check if we've reached the end
         if len(items) < per_page:
             break
-        
+
         page += 1
 
 
-def get_repo_details(owner: str, repo: str) -> Dict[str, Any]:
+def get_repo_details(owner: str, repo: str) -> dict[str, Any]:
     """Get detailed information about a repository."""
     url = f"https://api.github.com/repos/{owner}/{repo}"
     headers = get_github_headers()
-    
+
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def get_repo_languages(owner: str, repo: str) -> Dict[str, Any]:
+def get_repo_languages(owner: str, repo: str) -> dict[str, Any]:
     """Get language breakdown for a repository."""
     url = f"https://api.github.com/repos/{owner}/{repo}/languages"
     headers = get_github_headers()
-    
+
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return {
@@ -205,15 +203,15 @@ def get_repo_languages(owner: str, repo: str) -> Dict[str, Any]:
     }
 
 
-def get_repo_topics(owner: str, repo: str) -> List[Dict[str, Any]]:
+def get_repo_topics(owner: str, repo: str) -> list[dict[str, Any]]:
     """Get topics for a repository."""
     url = f"https://api.github.com/repos/{owner}/{repo}/topics"
     headers = get_github_headers()
     headers["Accept"] = "application/vnd.github.mercy-preview+json"
-    
+
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    
+
     topics = response.json().get("names", [])
     return [
         {
@@ -226,26 +224,28 @@ def get_repo_topics(owner: str, repo: str) -> List[Dict[str, Any]]:
     ]
 
 
-def get_repo_contributors(owner: str, repo: str, max_pages: int = 3) -> Iterator[Dict[str, Any]]:
+def get_repo_contributors(
+    owner: str, repo: str, max_pages: int = 3
+) -> Iterator[dict[str, Any]]:
     """Get top contributors for a repository."""
     url = f"https://api.github.com/repos/{owner}/{repo}/contributors"
     headers = get_github_headers()
-    
+
     params = {"per_page": 100}
-    
+
     for page in range(1, max_pages + 1):
         params["page"] = page
         response = requests.get(url, headers=headers, params=params)
-        
+
         if response.status_code == 204:  # No content
             return
-        
+
         response.raise_for_status()
         contributors = response.json()
-        
+
         if not contributors:
             break
-        
+
         for contributor in contributors:
             contributor["owner"] = owner
             contributor["repo"] = repo
@@ -253,22 +253,24 @@ def get_repo_contributors(owner: str, repo: str, max_pages: int = 3) -> Iterator
             yield contributor
 
 
-def get_repo_releases(owner: str, repo: str, max_pages: int = 5) -> Iterator[Dict[str, Any]]:
+def get_repo_releases(
+    owner: str, repo: str, max_pages: int = 5
+) -> Iterator[dict[str, Any]]:
     """Get releases for a repository."""
     url = f"https://api.github.com/repos/{owner}/{repo}/releases"
     headers = get_github_headers()
-    
+
     params = {"per_page": 100}
-    
+
     for page in range(1, max_pages + 1):
         params["page"] = page
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         releases = response.json()
-        
+
         if not releases:
             break
-        
+
         for release in releases:
             release["owner"] = owner
             release["repo"] = repo
@@ -278,7 +280,7 @@ def get_repo_releases(owner: str, repo: str, max_pages: int = 5) -> Iterator[Dic
 
 @dlt.source(name="github_ai_repos")
 def github_ai_source(
-    queries: List[str] = None,
+    queries: list[str] = None,
     max_repos_per_query: int = 100,
     min_stars: int = 100,
     language: str = None,
@@ -287,7 +289,7 @@ def github_ai_source(
 ):
     """
     dlt source for GitHub AI repositories.
-    
+
     Args:
         queries: List of search queries. Defaults to AI_QUERIES.
         max_repos_per_query: Maximum repositories to fetch per query.
@@ -297,7 +299,7 @@ def github_ai_source(
         pushed_after: Only repos pushed after this date (YYYY-MM-DD).
     """
     queries = queries or AI_QUERIES[:3]  # Default to first 3 queries
-    
+
     @dlt.resource(name="repositories", write_disposition="merge", primary_key=["id"])
     def repositories():
         """Fetch AI repositories from GitHub."""
@@ -305,7 +307,7 @@ def github_ai_source(
             print(f"Searching for: {query}")
             count = 0
             for repo in search_repositories(
-                query, 
+                query,
                 per_page=100,
                 min_stars=min_stars,
                 language=language,
@@ -316,37 +318,47 @@ def github_ai_source(
                 count += 1
                 if count >= max_repos_per_query:
                     break
-    
-    @dlt.resource(name="languages", write_disposition="merge", primary_key=["owner", "repo"])
+
+    @dlt.resource(
+        name="languages", write_disposition="merge", primary_key=["owner", "repo"]
+    )
     def languages():
         """Fetch language data for repositories."""
         # Get unique owner/repo pairs from repositories
         # In production, you'd query the loaded repositories
         # For now, we'll fetch for the first batch
         pass
-    
-    @dlt.resource(name="topics", write_disposition="merge", primary_key=["owner", "repo", "topic"])
+
+    @dlt.resource(
+        name="topics", write_disposition="merge", primary_key=["owner", "repo", "topic"]
+    )
     def topics():
         """Fetch topics for repositories."""
         pass
-    
-    @dlt.resource(name="contributors", write_disposition="merge", primary_key=["owner", "repo", "login"])
+
+    @dlt.resource(
+        name="contributors",
+        write_disposition="merge",
+        primary_key=["owner", "repo", "login"],
+    )
     def contributors():
         """Fetch contributors for repositories."""
         pass
-    
-    @dlt.resource(name="releases", write_disposition="merge", primary_key=["owner", "repo", "id"])
+
+    @dlt.resource(
+        name="releases", write_disposition="merge", primary_key=["owner", "repo", "id"]
+    )
     def releases():
         """Fetch releases for repositories."""
         pass
-    
+
     # Only return repositories for now (other resources need implementation)
     return repositories
 
 
 def run_pipeline(
     destination: str = "duckdb",
-    queries: List[str] = None,
+    queries: list[str] = None,
     max_repos_per_query: int = 100,
     min_stars: int = 100,
     language: str = None,
@@ -355,7 +367,7 @@ def run_pipeline(
 ):
     """
     Run the GitHub AI repos pipeline.
-    
+
     Args:
         destination: Where to load data. Options: "duckdb", "motherduck", "bigquery"
         queries: Custom list of search queries (defaults to AI_QUERIES[:5])
@@ -364,17 +376,17 @@ def run_pipeline(
         language: Filter by programming language (e.g., "python")
         created_after: Only repos created after date (YYYY-MM-DD)
         pushed_after: Only repos pushed after date (YYYY-MM-DD)
-    
+
     Examples:
         # Default: Fetch top 5 AI queries
         run_pipeline()
-        
+
         # Only Python repos with >1000 stars
         run_pipeline(language="python", min_stars=1000)
-        
+
         # Recently created repos (last 6 months)
         run_pipeline(created_after="2024-08-01")
-        
+
         # Custom search queries
         run_pipeline(queries=["generative-ai", "stable-diffusion", "whisper"])
     """
@@ -387,19 +399,21 @@ def run_pipeline(
         dest = dlt.destinations.motherduck(f"md:///github_ai_analytics?token={token}")
     else:
         dest = destination
-    
+
     # Create pipeline
     pipeline = dlt.pipeline(
         pipeline_name="github_ai_trends",
         destination=dest,
         dataset_name="github_raw",
     )
-    
+
     # Use default queries if none provided
     queries = queries or AI_QUERIES[:5]
-    
-    print(f"Running pipeline with {len(queries)} queries, max {max_repos_per_query} repos per query")
-    
+
+    print(
+        f"Running pipeline with {len(queries)} queries, max {max_repos_per_query} repos per query"
+    )
+
     # Create source with filters
     source = github_ai_source(
         queries=queries,
@@ -409,18 +423,19 @@ def run_pipeline(
         created_after=created_after,
         pushed_after=pushed_after,
     )
-    
+
     # Run pipeline
     info = pipeline.run(source)
     print(info)
-    
+
     return info
 
 
 if __name__ == "__main__":
     # Load environment variables
     from dotenv import load_dotenv
+
     load_dotenv()
-    
+
     # Run locally with DuckDB for testing
     run_pipeline(destination="duckdb")
