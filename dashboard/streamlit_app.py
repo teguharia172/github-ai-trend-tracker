@@ -302,6 +302,23 @@ def load_data():
     return repos, lang_trends, trending
 
 
+@st.cache_data(ttl=300)
+def load_totals():
+    """Load true totals from raw source (includes forks and archived)."""
+    conn = get_connection()
+    
+    totals = conn.execute("""
+        SELECT 
+            COUNT(DISTINCT id) as total_repos,
+            COALESCE(SUM(stargazers_count), 0) as total_stars,
+            COALESCE(SUM(forks_count), 0) as total_forks,
+            COUNT(DISTINCT language) as total_languages
+        FROM github_raw.repositories
+    """).fetchdf()
+    
+    return totals.iloc[0]
+
+
 def format_number(num):
     """Format number for display - use exact count for smaller numbers"""
     if num >= 1_000_000:
@@ -318,6 +335,7 @@ def main():
     # Load data
     try:
         repos, lang_trends, trending = load_data()
+        totals = load_totals()
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return
@@ -348,23 +366,18 @@ def main():
         <div class="header-label">Analytics Dashboard</div>
         <div class="header-title">GitHub AI Trend Tracker</div>
         <div class="header-subtitle">
-            Tracking {len(repos):,} open source AI/ML repositories across {repos['primary_language'].nunique()} languages
+            Tracking {totals['total_repos']:,} open source AI/ML repositories across {totals['total_languages']} languages
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Metrics - always show TOTALS from database (not filtered)
+    # Metrics - show TRUE TOTALS from raw source (includes forks, archived)
     m1, m2, m3, m4 = st.columns(4)
-    total_repos = len(repos)
-    total_stars = repos['stars_count'].sum()
-    total_forks = repos['forks_count'].sum()
-    total_languages = repos['primary_language'].nunique()
     
-    # Always show the real database totals (not affected by filters)
-    m1.metric("REPOSITORIES", format_number(total_repos))
-    m2.metric("TOTAL STARS", format_number(total_stars))
-    m3.metric("TOTAL FORKS", format_number(total_forks))
-    m4.metric("LANGUAGES", total_languages)
+    m1.metric("REPOSITORIES", format_number(totals['total_repos']))
+    m2.metric("TOTAL STARS", format_number(totals['total_stars']))
+    m3.metric("TOTAL FORKS", format_number(totals['total_forks']))
+    m4.metric("LANGUAGES", totals['total_languages'])
     
     st.markdown("<br>", unsafe_allow_html=True)
     
