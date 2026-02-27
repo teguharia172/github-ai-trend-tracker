@@ -1,0 +1,45 @@
+[project]
+name = "github-ai-trend-tracker"
+version = "0.1.0"
+description = "Track AI/ML open source trends from GitHub"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (black handles this)
+    "W291",  # trailing whitespace (black handles this)
+    "W293",  # whitespace before ':' in blank lines (black handles this)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "SIM"]
+"dashboard/app.py" = ["E722", "F401", "I001"]  # legacy file
+"orchestration/*" = ["F401", "F841", "I001"]    # legacy file
+"skills/*" = ["I001"]                            # legacy file
+"pipelines/*" = ["SIM113"]                       # count pattern is intentional
+
+[tool.ruff.lint.isort]
+known-first-party = ["pipelines", "dashboard"]

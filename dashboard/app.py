@@ -6,6 +6,7 @@ Generates beautiful HTML for GitHub Pages
 
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime
@@ -25,7 +26,7 @@ except ImportError:
 
 def get_connection():
     """Connect to MotherDuck database."""
-    token = os.getenv('MOTHERDUCK_TOKEN')
+    token = os.getenv("MOTHERDUCK_TOKEN")
     if token:
         conn = duckdb.connect(f"md:?motherduck_token={token}")
     else:
@@ -40,8 +41,9 @@ def get_connection():
 def load_data():
     """Load data from database."""
     conn = get_connection()
-    
-    repos = conn.execute("""
+
+    repos = conn.execute(
+        """
         SELECT 
             repo_id, full_name, html_url, description, primary_language,
             stars_count, forks_count, open_issues_count, created_at, updated_at,
@@ -49,113 +51,124 @@ def load_data():
             owner, license_name, star_to_fork_ratio
         FROM prod_marts.dim_repositories
         ORDER BY stars_count DESC
-    """).fetchdf()
-    
-    lang_trends = conn.execute("""
+    """
+    ).fetchdf()
+
+    lang_trends = conn.execute(
+        """
         SELECT 
             language, repo_count, total_stars, avg_stars, avg_stars_per_day,
             pct_of_total_stars, total_forks, language_rank_by_stars
         FROM prod_marts.fct_language_trends
         ORDER BY total_stars DESC
-    """).fetchdf()
-    
-    trending = conn.execute("""
+    """
+    ).fetchdf()
+
+    trending = conn.execute(
+        """
         SELECT 
             repo_id, full_name, primary_language, stars_count, stars_per_day,
             activity_status, ai_category, rank_by_velocity, html_url
         FROM prod_marts.fct_trending_repos
         ORDER BY stars_per_day DESC
-    """).fetchdf()
-    
+    """
+    ).fetchdf()
+
     return repos, lang_trends, trending
 
 
 def create_dashboard():
     """Generate professional dark-themed HTML dashboard."""
-    
+
     repos, lang_trends, trending = load_data()
-    
+
     # Metrics
     total_repos = len(repos)
-    total_stars = repos['stars_count'].sum()
-    total_forks = repos['forks_count'].sum()
-    total_langs = repos['primary_language'].nunique()
-    
+    total_stars = repos["stars_count"].sum()
+    total_forks = repos["forks_count"].sum()
+    total_langs = repos["primary_language"].nunique()
+
     # Chart 1: Top Languages
     fig1 = px.bar(
         lang_trends.head(10),
-        x='language',
-        y='total_stars',
-        color='total_stars',
-        color_continuous_scale='Plasma',
-        template='plotly_dark',
-        title='⭐ Top Languages by Total Stars'
+        x="language",
+        y="total_stars",
+        color="total_stars",
+        color_continuous_scale="Plasma",
+        template="plotly_dark",
+        title="⭐ Top Languages by Total Stars",
     )
     fig1.update_layout(
-        paper_bgcolor='rgba(15, 23, 42, 0)',
-        plot_bgcolor='rgba(15, 23, 42, 0)',
-        font_color='#e2e8f0',
+        paper_bgcolor="rgba(15, 23, 42, 0)",
+        plot_bgcolor="rgba(15, 23, 42, 0)",
+        font_color="#e2e8f0",
         height=400,
-        margin=dict(l=40, r=40, t=60, b=40)
+        margin=dict(l=40, r=40, t=60, b=40),
     )
-    
+
     # Chart 2: Pie Chart
     fig2 = px.pie(
         lang_trends.head(8),
-        values='repo_count',
-        names='language',
+        values="repo_count",
+        names="language",
         hole=0.5,
-        template='plotly_dark',
-        title='🥧 Repository Distribution'
+        template="plotly_dark",
+        title="🥧 Repository Distribution",
     )
     fig2.update_layout(
-        paper_bgcolor='rgba(15, 23, 42, 0)',
-        font_color='#e2e8f0',
+        paper_bgcolor="rgba(15, 23, 42, 0)",
+        font_color="#e2e8f0",
         height=400,
         showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, font=dict(color='#e2e8f0'))
+        legend=dict(
+            orientation="h", yanchor="bottom", y=-0.2, font=dict(color="#e2e8f0")
+        ),
     )
-    
+
     # Chart 3: Histogram
     fig3 = px.histogram(
         repos,
-        x='stars_count',
+        x="stars_count",
         nbins=15,
-        template='plotly_dark',
-        color_discrete_sequence=['#6366f1'],
-        title='📊 Stars Distribution'
+        template="plotly_dark",
+        color_discrete_sequence=["#6366f1"],
+        title="📊 Stars Distribution",
     )
     fig3.update_layout(
-        paper_bgcolor='rgba(15, 23, 42, 0)',
-        plot_bgcolor='rgba(15, 23, 42, 0)',
-        font_color='#e2e8f0',
+        paper_bgcolor="rgba(15, 23, 42, 0)",
+        plot_bgcolor="rgba(15, 23, 42, 0)",
+        font_color="#e2e8f0",
         height=350,
-        margin=dict(l=40, r=40, t=60, b=40)
+        margin=dict(l=40, r=40, t=60, b=40),
     )
-    
+
     # Chart 4: Activity
-    activity_counts = repos['activity_status'].value_counts().reset_index()
+    activity_counts = repos["activity_status"].value_counts().reset_index()
     fig4 = px.bar(
         activity_counts,
-        x='activity_status',
-        y='count',
-        color='count',
-        color_continuous_scale='Viridis',
-        template='plotly_dark',
-        title='⚡ Activity Status'
+        x="activity_status",
+        y="count",
+        color="count",
+        color_continuous_scale="Viridis",
+        template="plotly_dark",
+        title="⚡ Activity Status",
     )
     fig4.update_layout(
-        paper_bgcolor='rgba(15, 23, 42, 0)',
-        plot_bgcolor='rgba(15, 23, 42, 0)',
-        font_color='#e2e8f0',
+        paper_bgcolor="rgba(15, 23, 42, 0)",
+        plot_bgcolor="rgba(15, 23, 42, 0)",
+        font_color="#e2e8f0",
         height=350,
-        margin=dict(l=40, r=40, t=60, b=40)
+        margin=dict(l=40, r=40, t=60, b=40),
     )
-    
+
     # Generate table rows
     table_rows = ""
     for _, row in trending.head(15).iterrows():
-        status_color = "#22c55e" if row['activity_status'] == 'Very Active' else "#eab308" if row['activity_status'] == 'Active' else "#6b7280"
+        status_color = (
+            "#22c55e"
+            if row["activity_status"] == "Very Active"
+            else "#eab308" if row["activity_status"] == "Active" else "#6b7280"
+        )
         table_rows += f"""
         <tr>
             <td><a href="{row['html_url']}" target="_blank">{row['full_name']}</a></td>
@@ -166,8 +179,8 @@ def create_dashboard():
             <td><span class="status-badge" style="background: {status_color}20; color: {status_color}; border: 1px solid {status_color}40;">{row['activity_status']}</span></td>
         </tr>
         """
-    
-    html = f'''<!DOCTYPE html>
+
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -446,23 +459,23 @@ def create_dashboard():
         Plotly.newPlot('chart4', chart4.data, chart4.layout, {{responsive: true}});
     </script>
 </body>
-</html>'''
-    
+</html>"""
+
     return html
 
 
 def main():
     print("🔌 Connecting to MotherDuck...")
     print("📊 Fetching data...")
-    
+
     html = create_dashboard()
-    
-    os.makedirs('build', exist_ok=True)
-    with open('build/index.html', 'w') as f:
+
+    os.makedirs("build", exist_ok=True)
+    with open("build/index.html", "w") as f:
         f.write(html)
-    
+
     print("✅ Professional dashboard built: build/index.html")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
