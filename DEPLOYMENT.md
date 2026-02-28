@@ -2,7 +2,7 @@
 
 Deploy your GitHub AI Trend Tracker to run daily with free cloud services.
 
-**Live Dashboard URL:** `https://github-ai-trend-tracker.streamlit.app`
+**Live Dashboard URL:** https://gh-ai-trend-tracker.streamlit.app/
 
 ---
 

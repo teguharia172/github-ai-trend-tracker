@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from datetime import datetime
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 try:
@@ -385,7 +386,7 @@ def main():
         <div class="header-label">Analytics Dashboard</div>
         <div class="header-title">GitHub AI Trend Tracker</div>
         <div class="header-subtitle">
-            Tracking {totals['total_repos']:,} open source AI/ML repositories across {totals['total_languages']} languages
+            Tracking {int(totals['total_repos']):,} open source AI/ML repositories across {int(totals['total_languages'])} languages
         </div>
     </div>
     """,
@@ -395,10 +396,10 @@ def main():
     # Metrics - show TRUE TOTALS from raw source (includes forks, archived)
     m1, m2, m3, m4 = st.columns(4)
 
-    m1.metric("REPOSITORIES", format_number(totals["total_repos"]))
-    m2.metric("TOTAL STARS", format_number(totals["total_stars"]))
-    m3.metric("TOTAL FORKS", format_number(totals["total_forks"]))
-    m4.metric("LANGUAGES", totals["total_languages"])
+    m1.metric("REPOSITORIES", format_number(int(totals["total_repos"])))
+    m2.metric("TOTAL STARS", format_number(int(totals["total_stars"])))
+    m3.metric("TOTAL FORKS", format_number(int(totals["total_forks"])))
+    m4.metric("LANGUAGES", int(totals["total_languages"]))
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -457,12 +458,25 @@ def main():
                 unsafe_allow_html=True,
             )
 
-            # Sort chart data descending
-            chart_data = lang_trends.head(10).set_index("language")[["total_stars"]]
-            # Ensure descending order
-            chart_data = chart_data.sort_values("total_stars", ascending=False)
+            chart_data = lang_trends.head(10).sort_values("total_stars", ascending=True)
 
-            st.bar_chart(chart_data, use_container_width=True, height=400)
+            fig = px.bar(
+                chart_data,
+                x="total_stars",
+                y="language",
+                orientation="h",
+                labels={"total_stars": "Total Stars", "language": ""},
+            )
+            fig.update_traces(marker_color="#2563eb")
+            fig.update_layout(
+                plot_bgcolor="#ffffff",
+                paper_bgcolor="#ffffff",
+                height=400,
+                margin=dict(l=0, r=0, t=0, b=0),
+                xaxis=dict(gridcolor="#f0f0f0"),
+                yaxis=dict(gridcolor="#f0f0f0"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             st.markdown(
@@ -522,7 +536,7 @@ def main():
     st.markdown(
         f"""
     <div class="footer">
-        Last updated {datetime.now().strftime('%B %d, %Y at %H:%M UTC')} • {len(repos):,} repositories tracked
+        Last updated {datetime.now().strftime('%B %d, %Y at %H:%M UTC')} • {int(totals['total_repos']):,} repositories tracked
     </div>
     """,
         unsafe_allow_html=True,
