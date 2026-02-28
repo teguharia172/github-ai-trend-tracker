@@ -577,13 +577,16 @@ def main():
         # Build HTML table for full theme control (st.dataframe ignores CSS)
         rows_html = ""
         for _, row in display_df.iterrows():
+            stars = int(row["Stars"]) if pd.notna(row["Stars"]) else 0
+            forks = int(row["Forks"]) if pd.notna(row["Forks"]) else 0
+            issues = int(row["Issues"]) if pd.notna(row["Issues"]) else 0
             rows_html += (
                 "<tr>"
                 f"<td style='font-weight:500;'>{row['Repository']}</td>"
                 f"<td>{row['Language'] or '—'}</td>"
-                f"<td style='text-align:right;'>{int(row['Stars']):,}</td>"
-                f"<td style='text-align:right;'>{int(row['Forks']):,}</td>"
-                f"<td style='text-align:right;'>{int(row['Issues']):,}</td>"
+                f"<td style='text-align:right;'>{stars:,}</td>"
+                f"<td style='text-align:right;'>{forks:,}</td>"
+                f"<td style='text-align:right;'>{issues:,}</td>"
                 f"<td>{row['Status']}</td>"
                 "</tr>"
             )
