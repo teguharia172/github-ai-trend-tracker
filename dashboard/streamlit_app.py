@@ -10,12 +10,14 @@ from datetime import datetime
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-load_dotenv(
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-)
+
+_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(_env_path):
+    from dotenv import load_dotenv
+
+    load_dotenv(_env_path)
 
 try:
     import duckdb

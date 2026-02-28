@@ -33,5 +33,12 @@ jobs:
       - name: Format check with black
         run: black --check pipelines/ tests/ dashboard/
 
+      - name: Check no hard dotenv import in dashboard
+        run: |
+          if grep -rn "^from dotenv" dashboard/ || grep -rn "^import dotenv" dashboard/; then
+            echo "ERROR: dashboard/ must not have top-level dotenv imports (breaks Streamlit Cloud)"
+            exit 1
+          fi
+
       - name: Run tests
         run: pytest tests/ -v
