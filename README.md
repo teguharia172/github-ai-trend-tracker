@@ -7,6 +7,8 @@
 
 A complete data pipeline that tracks AI/ML open source trends from GitHub, transforms the data with dbt, and visualizes it in a beautiful Streamlit dashboard.
 
+**[View Live Dashboard](https://gh-ai-trend-tracker.streamlit.app/)**
+
 ## 🏗️ Architecture
 
 ```mermaid

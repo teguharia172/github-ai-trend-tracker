@@ -4,6 +4,8 @@
 
 **GitHub AI Trend Tracker** — A data pipeline that tracks AI/ML open source trends from GitHub, transforms data with dbt, and visualizes it in a Streamlit dashboard.
 
+- **Live dashboard**: https://gh-ai-trend-tracker.streamlit.app/
+
 ## Architecture
 
 ```
@@ -88,25 +90,85 @@ Required in `.env` or GitHub Secrets:
 - **Formatting**: black (line-length 88), ruff for linting
 - **Imports**: stdlib → third-party → local (ruff enforces)
 
-## dbt Model DAG
+## Data Flow
+
+### Ingestion (dlt)
+
+`pipelines/github_ai_repos.py` searches GitHub API for ~40 AI-related queries
+(e.g. "llm", "pytorch", "langchain") and writes to a single source table:
 
 ```
-Sources:  github_raw.repositories
-              ↓
-Staging:  stg_repositories
-              ↓
-Intermediate: int_repo_growth_metrics
-              ↓
-Marts:    dim_repositories          (dimension — repo attributes)
-          fct_language_trends       (fact — language stats)
-          fct_repo_star_history     (incremental — daily snapshots)
-          fct_repo_star_growth      (view — 1d/7d/30d growth)
-          fct_trending_repos        (fact — velocity-ranked repos)
+github_raw.repositories  — one row per repo, merge on `id`
 ```
 
-- **Naming**: `stg_` (staging), `int_` (intermediate), `dim_` (dimension), `fct_` (fact)
-- **MotherDuck database**: `github_ai_analytics`
-- **Schemas**: `github_raw` (source), `prod_marts` (transformed)
+This is the ONLY table dlt writes. Everything below is dbt.
+
+### Transformation (dbt)
+
+```
+github_raw.repositories          <-- raw source (dlt writes here)
+        │
+        ▼
+stg_repositories (view)          <-- RENAME + CLEAN
+│  Renames: owner__login → owner, stargazers_count → stars_count
+│  Calculates: repo_age_days, stars_per_day (lifetime avg)
+│  No filtering — 1:1 with source
+        │
+        ▼
+int_repo_growth_metrics (view)   <-- ENRICH + FILTER + CLASSIFY (central hub)
+│  FILTERS OUT forks and archived repos
+│  Adds: popularity_tier, activity_status, ai_category
+│  Adds: star_to_fork_ratio, days_since_last_push
+│  Most mart tables read from here
+        │
+        ├──▶ dim_repositories (table)
+        │      Pass-through with dbt_loaded_at timestamp
+        │      Dashboard: "Browse All" tab
+        │
+        ├──▶ fct_language_trends (table)
+        │      GROUP BY language → repo_count, total_stars, avg_stars,
+        │      top_5_repos, pct_of_total, language_rank
+        │      Dashboard: "Languages" tab
+        │
+        ├──▶ fct_repo_star_history (incremental table)
+        │  │   Daily snapshot of star counts per repo
+        │  │   Compares today vs yesterday → stars_gained_1d
+        │  │   unique_key: [repo_id, snapshot_date]
+        │  │
+        │  ▼
+        │  fct_repo_star_growth (view)
+        │  │   Joins 3 snapshots: today, 7d ago, 30d ago
+        │  │   Outputs: stars_gained_1d/7d/30d, avg_daily_stars_7d/30d
+        │  │
+        │  ▼
+        └──▶ fct_trending_repos (table)
+               Joins int_repo_growth_metrics + fct_repo_star_growth
+               Adds: rank_in_category, rank_by_velocity (1-day growth)
+               Dashboard: "Trending" tab (sorted by stars_per_day)
+```
+
+### What the Dashboard Reads
+
+| Dashboard Section | Table | Key Columns |
+|---|---|---|
+| Header metrics | `github_raw.repositories` | Raw counts (includes forks/archived) |
+| "Trending" tab | `prod_marts.fct_trending_repos` | stars_gained_1d, stars_per_day |
+| "Languages" tab | `prod_marts.fct_language_trends` | language, repo_count, total_stars |
+| "Browse All" tab | `prod_marts.dim_repositories` | stars_count, activity_status |
+
+### MotherDuck Schemas
+
+| Schema | Contains |
+|---|---|
+| `github_raw` | 1 table: `repositories` (dlt source) |
+| `prod_staging` | 1 view: `stg_repositories` |
+| `prod_intermediate` | 1 view: `int_repo_growth_metrics` |
+| `prod_marts` | 5 models: `dim_repositories`, `fct_language_trends`, `fct_repo_star_history`, `fct_repo_star_growth`, `fct_trending_repos` |
+
+### Naming Conventions
+
+- `stg_` = staging, `int_` = intermediate, `dim_` = dimension, `fct_` = fact
+- **Database**: `github_ai_analytics`
 
 ## Common Development Tasks
 
