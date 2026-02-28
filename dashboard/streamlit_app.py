@@ -59,7 +59,27 @@ st.markdown(
         padding: 2rem 3rem !important;
         max-width: 1200px !important;
     }
-    
+
+    @media (max-width: 640px) {
+        .block-container {
+            padding: 1rem !important;
+        }
+
+        .repo-card {
+            flex-direction: column;
+        }
+
+        .repo-main {
+            padding-right: 0 !important;
+            margin-bottom: 0.75rem;
+        }
+
+        .repo-stats {
+            text-align: left;
+            min-width: unset;
+        }
+    }
+
     /* === HEADER === */
     .header-container {
         margin-bottom: 2.5rem;
