@@ -5,14 +5,15 @@ GitHub AI Trend Tracker - Clean Evidence-Style Dashboard
 
 import os
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 try:
     import duckdb
@@ -217,21 +218,32 @@ st.markdown(
         border: 1px solid #e5e5e5 !important;
         background: #ffffff !important;
     }
-    
+
     div[data-testid="stDataFrame"] th {
         background: #fafafa !important;
-        color: #666 !important;
+        color: #333 !important;
         font-size: 0.7rem !important;
         font-weight: 600 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
         border-bottom: 1px solid #e5e5e5 !important;
     }
-    
+
     div[data-testid="stDataFrame"] td {
         background: #ffffff !important;
-        color: #444 !important;
+        color: #222 !important;
         border-bottom: 1px solid #f0f0f0 !important;
+    }
+
+    /* Force white background on dataframe container and grid cells */
+    div[data-testid="stDataFrame"] > div,
+    div[data-testid="stDataFrame"] iframe {
+        background: #ffffff !important;
+    }
+
+    div[data-testid="stDataFrame"] [data-testid="glideDataEditor"],
+    div[data-testid="stDataFrame"] [data-testid="glideDataEditor"] > div {
+        background: #ffffff !important;
     }
     
     /* === SIDEBAR === */
@@ -467,14 +479,23 @@ def main():
                 orientation="h",
                 labels={"total_stars": "Total Stars", "language": ""},
             )
-            fig.update_traces(marker_color="#2563eb")
+            fig.update_traces(marker_color="#1e40af")
             fig.update_layout(
                 plot_bgcolor="#ffffff",
                 paper_bgcolor="#ffffff",
                 height=400,
                 margin=dict(l=0, r=0, t=0, b=0),
-                xaxis=dict(gridcolor="#f0f0f0"),
-                yaxis=dict(gridcolor="#f0f0f0"),
+                xaxis=dict(
+                    showgrid=False,
+                    tickfont=dict(color="#333"),
+                    title_font=dict(color="#333"),
+                ),
+                yaxis=dict(
+                    showgrid=False,
+                    tickfont=dict(color="#333"),
+                    title_font=dict(color="#333"),
+                ),
+                font=dict(color="#333"),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -488,7 +509,7 @@ def main():
                     f"""
                 <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0;">
                     <span style="font-weight: 500; color: #111;">{lang['language']}</span>
-                    <span style="color: #666; font-size: 0.9rem;">{lang['repo_count']} repos • {format_number(lang['total_stars'])} ★</span>
+                    <span style="color: #333; font-size: 0.9rem;">{lang['repo_count']} repos • {format_number(lang['total_stars'])} ★</span>
                 </div>
                 """,
                     unsafe_allow_html=True,
@@ -519,17 +540,52 @@ def main():
             "Status",
         ]
 
-        st.dataframe(
-            display_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Repository": st.column_config.TextColumn(width="large"),
-                "Language": st.column_config.TextColumn(width="small"),
-                "Stars": st.column_config.NumberColumn(format="%d", width="small"),
-                "Forks": st.column_config.NumberColumn(format="%d", width="small"),
-                "Issues": st.column_config.NumberColumn(format="%d", width="small"),
-            },
+        # Build HTML table for full theme control (st.dataframe ignores CSS)
+        rows_html = ""
+        for _, row in display_df.iterrows():
+            rows_html += (
+                "<tr>"
+                f"<td style='font-weight:500;'>{row['Repository']}</td>"
+                f"<td>{row['Language'] or '—'}</td>"
+                f"<td style='text-align:right;'>{int(row['Stars']):,}</td>"
+                f"<td style='text-align:right;'>{int(row['Forks']):,}</td>"
+                f"<td style='text-align:right;'>{int(row['Issues']):,}</td>"
+                f"<td>{row['Status']}</td>"
+                "</tr>"
+            )
+
+        st.markdown(
+            f"""
+            <div style="max-height:600px; overflow-y:auto; border:1px solid #e5e5e5;">
+            <table style="width:100%; border-collapse:collapse; background:#ffffff;">
+                <thead>
+                    <tr style="position:sticky; top:0; background:#fafafa; border-bottom:2px solid #e5e5e5;">
+                        <th style="text-align:left; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Repository</th>
+                        <th style="text-align:left; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Language</th>
+                        <th style="text-align:right; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Stars</th>
+                        <th style="text-align:right; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Forks</th>
+                        <th style="text-align:right; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Issues</th>
+                        <th style="text-align:left; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Status</th>
+                    </tr>
+                </thead>
+                <tbody style="color:#222; font-size:0.9rem;">
+                    {rows_html}
+                </tbody>
+            </table>
+            </div>
+            <style>
+                div.stMarkdown table tbody tr {{
+                    border-bottom: 1px solid #f0f0f0;
+                }}
+                div.stMarkdown table tbody td {{
+                    padding: 0.6rem 1rem;
+                }}
+                div.stMarkdown table tbody tr:hover {{
+                    background: #fafafa;
+                }}
+            </style>
+            """,
+            unsafe_allow_html=True,
         )
 
     # Footer
