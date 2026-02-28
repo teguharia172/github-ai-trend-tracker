@@ -3,6 +3,7 @@
 GitHub AI Trend Tracker - Clean Evidence-Style Dashboard
 """
 
+import html
 import os
 import sys
 from datetime import datetime
@@ -445,15 +446,22 @@ def main():
                 daily_stars = r.get("stars_per_day", 0)
                 velocity_label = "avg/day (lifetime)"
 
+            # Escape all user-supplied strings to prevent XSS
+            safe_desc = html.escape(desc)
+            safe_full_name = html.escape(str(r["full_name"]))
+            safe_html_url = html.escape(str(r["html_url"]))
+            safe_language = html.escape(str(r["primary_language"] or "Unknown"))
+            safe_activity = html.escape(str(r["activity_status"]))
+
             st.markdown(
                 f"""
             <div class="repo-card">
                 <div class="repo-main">
                     <div class="repo-title">
-                        <a href="{r['html_url']}" target="_blank">{r['full_name']}</a>
+                        <a href="{safe_html_url}" target="_blank">{safe_full_name}</a>
                     </div>
-                    <div class="repo-desc">{desc}</div>
-                    <div class="repo-meta">{r['primary_language'] or 'Unknown'} • {r['activity_status']}</div>
+                    <div class="repo-desc">{safe_desc}</div>
+                    <div class="repo-meta">{safe_language} • {safe_activity}</div>
                 </div>
                 <div class="repo-stats">
                     <div class="repo-stat-value">{format_number(r['stars_count'])}</div>
