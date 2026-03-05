@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 2
 
       - name: Check for LINEAR_API_KEY
         id: check_secret
@@ -55,44 +55,63 @@ jobs:
 
           # Capture commit context
           echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          echo "author=$(git log -1 --pretty='%an')" >> "$GITHUB_OUTPUT"
-          echo "message=$(git log -1 --pretty='%s')" >> "$GITHUB_OUTPUT"
+          echo "author=$(git log -1 --pretty='%an' || echo 'Unknown')" >> "$GITHUB_OUTPUT"
+          echo "message=$(git log -1 --pretty='%s' || echo 'No message')" >> "$GITHUB_OUTPUT"
 
       - name: Move Linear issue to In Progress or Done
         if: steps.check_secret.outputs.has_secret == 'true' && steps.extract.outputs.found == 'true'
+        continue-on-error: true
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
           ISSUE_ID="${{ steps.extract.outputs.issue_id }}"
           IS_MERGED="${{ github.event.pull_request.merged }}"
 
-          # Fetch the issue's internal UUID and team states
-          ISSUE_DATA=$(curl -sf -X POST https://api.linear.app/graphql \
+          # Fetch the issue's internal UUID and team states using identifier filter
+          ISSUE_DATA=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id team { id states { nodes { id name type } } } } }\" }")
+            -d "{\"query\": \"{ issues(filter: { identifier: { eq: \\\"$ISSUE_ID\\\" } }) { nodes { id team { id states { nodes { id name type } } } } } }\" }" || echo '{}')
 
-          ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
+          ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              nodes = d.get('data', {}).get('issues', {}).get('nodes', [])
+              print(nodes[0]['id'] if nodes else '')
+          except Exception:
+              print('')
+          ")
+
+          if [ -z "$ISSUE_UUID" ]; then
+            echo "⚠️  Could not find issue $ISSUE_ID — skipping status update"
+            exit 0
+          fi
 
           if [ "$IS_MERGED" = "true" ]; then
             TARGET_STATE_ID=$(echo "$ISSUE_DATA" | python3 -c "
           import sys, json
-          d = json.load(sys.stdin)
-          states = d['data']['issue']['team']['states']['nodes']
-          # prefer type=completed, fallback to name match
-          match = next((s['id'] for s in states if s.get('type') == 'completed'), None)
-          if not match:
-              match = next((s['id'] for s in states if 'done' in s['name'].lower()), None)
-          print(match or '')
+          try:
+              d = json.load(sys.stdin)
+              states = d['data']['issues']['nodes'][0]['team']['states']['nodes']
+              match = next((s['id'] for s in states if s.get('type') == 'completed'), None)
+              if not match:
+                  match = next((s['id'] for s in states if 'done' in s['name'].lower()), None)
+              print(match or '')
+          except Exception:
+              print('')
             ")
             LABEL="Done"
           else
             TARGET_STATE_ID=$(echo "$ISSUE_DATA" | python3 -c "
           import sys, json
-          d = json.load(sys.stdin)
-          states = d['data']['issue']['team']['states']['nodes']
-          match = next((s['id'] for s in states if 'progress' in s['name'].lower()), None)
-          print(match or '')
+          try:
+              d = json.load(sys.stdin)
+              states = d['data']['issues']['nodes'][0]['team']['states']['nodes']
+              match = next((s['id'] for s in states if 'progress' in s['name'].lower()), None)
+              print(match or '')
+          except Exception:
+              print('')
             ")
             LABEL="In Progress"
           fi
@@ -100,15 +119,26 @@ jobs:
           if [ -z "$TARGET_STATE_ID" ]; then
             echo "⚠️  Could not find '$LABEL' state — skipping status update"
           else
-            curl -sf -X POST https://api.linear.app/graphql \
+            curl -s -X POST https://api.linear.app/graphql \
               -H "Authorization: $LINEAR_API_KEY" \
               -H "Content-Type: application/json" \
               -d "{\"query\": \"mutation { issueUpdate(id: \\\"$ISSUE_UUID\\\", input: { stateId: \\\"$TARGET_STATE_ID\\\" }) { success } }\" }" \
-              | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Moved to $LABEL' if d['data']['issueUpdate']['success'] else '❌ Failed to update status')"
+              | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              if d['data']['issueUpdate']['success']:
+                  print('✅ Moved to $LABEL')
+              else:
+                  print('❌ Failed to update status')
+          except Exception as e:
+              print(f'⚠️  Could not parse response: {e}')
+          "
           fi
 
       - name: Post comment on Linear issue
         if: steps.check_secret.outputs.has_secret == 'true' && steps.extract.outputs.found == 'true'
+        continue-on-error: true
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
@@ -126,51 +156,65 @@ jobs:
             IS_MERGED="${{ github.event.pull_request.merged }}"
             HEAD_REF="${{ github.head_ref }}"
             if [ "$IS_MERGED" = "true" ]; then
-              COMMENT=$(cat << 'EOF'
-          ✅ **Pull Request #${PR_NUM} merged** into `main`
+              COMMENT="✅ **Pull Request #${PR_NUM} merged** into \`main\`
 
           **Commit:** [${SHA}](https://github.com/${REPO}/commit/${GITHUB_SHA})
           **Author:** ${AUTHOR}
           **Message:** ${MSG}
-          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})
-          EOF
-          )
+          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
             else
-              COMMENT=$(cat << 'EOF'
-          🔀 **Pull Request #${PR_NUM} opened** on `${HEAD_REF}`
+              COMMENT="🔀 **Pull Request #${PR_NUM} opened** on \`${HEAD_REF}\`
 
           **Commit:** [${SHA}](https://github.com/${REPO}/commit/${GITHUB_SHA})
           **Author:** ${AUTHOR}
           **Message:** ${MSG}
-          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})
-          EOF
-          )
+          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
             fi
           else
             COMMIT_URL="https://github.com/${REPO}/commit/${GITHUB_SHA}"
-            COMMENT=$(cat << EOF
-          🚀 **Commit pushed** to \`${GITHUB_REF_NAME}\`
+            COMMENT="🚀 **Commit pushed** to \`${GITHUB_REF_NAME}\`
 
           **Commit:** [\`${SHA}\`](${COMMIT_URL})
           **Author:** ${AUTHOR}
           **Message:** ${MSG}
-          **Branch:** [View on GitHub](https://github.com/${REPO}/tree/${GITHUB_REF_NAME})
-          EOF
-          )
+          **Branch:** [View on GitHub](https://github.com/${REPO}/tree/${GITHUB_REF_NAME})"
           fi
 
           # Fetch issue UUID for the comment mutation
-          ISSUE_UUID=$(curl -sf -X POST https://api.linear.app/graphql \
+          ISSUE_UUID=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id } }\" }" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
+            -d "{\"query\": \"{ issues(filter: { identifier: { eq: \\\"$ISSUE_ID\\\" } }) { nodes { id } } }\" }" \
+            | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              nodes = d.get('data', {}).get('issues', {}).get('nodes', [])
+              print(nodes[0]['id'] if nodes else '')
+          except Exception:
+              print('')
+          " || echo '')
+
+          if [ -z "$ISSUE_UUID" ]; then
+            echo "⚠️  Could not find issue $ISSUE_ID — skipping comment"
+            exit 0
+          fi
 
           # Escape the comment body for JSON
           ESCAPED_COMMENT=$(echo "$COMMENT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))")
 
-          curl -sf -X POST https://api.linear.app/graphql \
+          curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{\"query\": \"mutation { commentCreate(input: { issueId: \\\"$ISSUE_UUID\\\", body: $ESCAPED_COMMENT }) { success } }\" }" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Comment posted' if d['data']['commentCreate']['success'] else '❌ Failed to post comment')"
+            | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              if d['data']['commentCreate']['success']:
+                  print('✅ Comment posted')
+              else:
+                  print('❌ Failed to post comment')
+          except Exception as e:
+              print(f'⚠️  Could not parse response: {e}')
+          "
