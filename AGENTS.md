@@ -234,3 +234,104 @@ cd dbt && dbt build --target dev
 - GitHub repo: `teguharia172/github-ai-trend-tracker`
 - Linear team: **GHtrend** (key: `GHT`)
 - Linear project: **GH Trend Tracker**
+
+---
+
+## Workflow Standards
+
+### Commit Message Convention (Conventional Commits)
+
+Format: **`type(scope): short description`**
+
+```
+feat(dashboard): add sparkline chart for trending repos
+^    ^           ^
+│    │           └─ imperative, lowercase, no period, max 72 chars
+│    └─ scope (optional but recommended)
+└─ type (required)
+```
+
+**Allowed types:**
+
+| Type | When to use |
+|------|------------|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `chore` | Maintenance, deps, config (no production logic change) |
+| `docs` | Documentation only |
+| `refactor` | Code restructure, no behavior change |
+| `test` | Add or update tests |
+| `ci` | GitHub Actions / CI changes |
+| `perf` | Performance improvement |
+
+**Allowed scopes:**
+
+`pipeline` · `dbt` · `dashboard` · `infra` · `tests` · `docs`
+
+**Linear issue reference (footer):**
+
+```
+feat(dashboard): add sparkline chart for trending repos
+
+Add a sparkline to fct_trending_repos card showing 7-day star velocity.
+
+Refs: GHT-42
+```
+
+> Rules enforced by `.commitlintrc.json`. See `.github/commit_convention.md` for full examples.
+
+---
+
+### Branch Naming Convention
+
+Pattern: **`{type}/{LINEAR-ID}-{short-description}`**
+
+```
+feat/GHT-42-add-sparkline-chart
+fix/GHT-17-fix-null-star-count
+chore/GHT-55-upgrade-dlt-version
+docs/GHT-8-update-dbt-model-docs
+refactor/GHT-31-simplify-ingestion-retry
+test/GHT-19-add-pipeline-unit-tests
+ci/GHT-60-add-branch-name-lint
+```
+
+**Rules:**
+- Type must match a valid commit type (above)
+- LINEAR-ID is required — always link to a Linear issue
+- Description is lowercase, hyphen-separated, max 50 chars
+- No slashes inside the description segment
+
+**Linear tip:** In Linear → Settings → Teams → GHtrend → Branch name template, set: `{type}/{issueIdentifier}-{issueTitle}` to auto-generate compliant branch names via the "Copy branch name" button on any issue.
+
+---
+
+### Linear ↔ GitHub Automation
+
+The workflow `.github/workflows/linear-sync.yml` automatically:
+1. **Moves the Linear issue to "In Progress"** when a branch matching `GHT-XXX` is pushed
+2. **Posts a comment** on the issue with the commit SHA, author, message, and GitHub link
+
+**Required secret:** Add `LINEAR_API_KEY` to GitHub repo → Settings → Secrets and variables → Actions.
+Get the key from: Linear → Settings → API → Personal API keys.
+
+---
+
+### Linear Issue Templates
+
+Four PM-quality issue templates live in `.linear/`. Copy them into Linear via:
+**Linear → Settings → Teams → GHtrend → Templates → New template**
+
+| Template | File | Use for |
+|----------|------|---------|
+| 🐛 Bug | `.linear/bug.md` | Unexpected behavior, errors, regressions |
+| ✨ Feature | `.linear/feature.md` | New user-facing capability |
+| 🔧 Chore | `.linear/chore.md` | Tech debt, deps, config, non-feature work |
+| 📈 Improvement | `.linear/improvement.md` | Enhancing existing functionality |
+
+---
+
+## Agent Docs
+
+`AGENTS.md` is the **single source of truth** for all AI coding agents.
+`CLAUDE.md` redirects here and should not be edited.

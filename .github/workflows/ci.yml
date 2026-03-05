@@ -8,6 +8,49 @@ env:
   PYTHON_VERSION: "3.11"
 
 jobs:
+  conventions:
+    name: Commit & Branch Conventions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          echo "Branch: $BRANCH"
+          # Allow dependabot, renovate, and main/release branches
+          if echo "$BRANCH" | grep -qE '^(dependabot/|renovate/|main$|release/)'; then
+            echo "✅ Automated branch — skipping name check"
+            exit 0
+          fi
+          PATTERN='^(feat|fix|chore|docs|refactor|test|ci|perf)/GHT-[0-9]+-[a-z0-9-]+$'
+          if echo "$BRANCH" | grep -qE "$PATTERN"; then
+            echo "✅ Branch name is valid: $BRANCH"
+          else
+            echo "❌ Branch name '$BRANCH' does not match required pattern:"
+            echo "   {type}/GHT-{id}-{short-description}"
+            echo "   Example: feat/GHT-42-add-sparkline-chart"
+            echo "   See .github/commit_convention.md for details"
+            exit 1
+          fi
+
+      - name: Setup Node for commitlint
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install commitlint
+        run: npm install --no-save @commitlint/cli @commitlint/config-conventional
+
+      - name: Lint commit messages
+        run: |
+          npx commitlint --from ${{ github.event.pull_request.base.sha }} \
+                         --to ${{ github.event.pull_request.head.sha }} \
+                         --verbose
+
   quality:
     name: Lint, Format & Test
     runs-on: ubuntu-latest
