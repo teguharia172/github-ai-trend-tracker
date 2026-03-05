@@ -9,6 +9,9 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v --tb=short"
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "integration: marks tests as integration tests (may be slower, use real DB)",
+]
 
 [tool.black]
 line-length = 88
