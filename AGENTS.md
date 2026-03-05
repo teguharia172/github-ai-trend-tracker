@@ -100,7 +100,9 @@ This file provides persistent instructions for AI coding agents (Kimi Code, Clau
 - `black --check` — Format errors, run `make format`
 - `pytest` — Test failures, fix code
 - `commitlint` — Bad commit message, use `git commit --amend`
+  - **Most common**: `subject-case` — subject must be all lowercase (e.g. `fix api` not `fix API`)
 - `dotenv import check` — Remove top-level dotenv imports from dashboard
+- `linear-sync` — Linear API call failed; uses `continue-on-error` so should not block, but check if `curl -sf` was accidentally re-introduced (must use `curl -s` with graceful error handling)
 
 ---
 
@@ -369,6 +371,8 @@ feat(dashboard): add sparkline chart for trending repos
 └─ type (required)
 ```
 
+> ⚠️ **`subject-case` rule is strictly enforced** — the subject (everything after `type(scope): `) must be **entirely lowercase**. No proper nouns, no acronyms in caps. Write `api` not `API`, `linear` not `Linear`, `graphql` not `GraphQL`. The body and footer are not checked.
+
 **Allowed types:**
 
 | Type | When to use |
@@ -432,6 +436,8 @@ The workflow `.github/workflows/linear-sync.yml` automatically:
 
 **Required secret:** Add `LINEAR_API_KEY` to GitHub repo → Settings → Secrets and variables → Actions.
 Get the key from: Linear → Settings → API → Personal API keys.
+
+> ⚠️ **If editing linear-sync.yml:** All Linear API steps must use `continue-on-error: true` and `curl -s` (NOT `curl -sf`). The `-f` flag causes curl to exit with code 22 on HTTP errors, which crashes the workflow. Errors should be handled gracefully in Python with try/except.
 
 ---
 
