@@ -2,8 +2,9 @@ name: Daily Data Ingestion
 
 on:
   schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
+    # Run daily at 23:50 UTC — captures a near-complete 24h day of star activity
+    # 23:50 (not 23:59) to avoid GitHub Actions scheduling drift past midnight
+    - cron: '50 23 * * *'
   workflow_dispatch:  # Allow manual trigger
   push:
     branches: [main]  # Also run on pushes to main
