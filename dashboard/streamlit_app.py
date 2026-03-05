@@ -459,7 +459,7 @@ def main():
 
             # Use ACTUAL 1-day star growth if available, fallback to lifetime average
             stars_gained_1d = r.get("stars_gained_1d")
-            if stars_gained_1d and not pd.isna(stars_gained_1d):
+            if pd.notna(stars_gained_1d) and stars_gained_1d:
                 daily_stars = stars_gained_1d
                 velocity_label = "new stars today"
             else:
