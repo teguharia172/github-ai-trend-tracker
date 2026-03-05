@@ -63,16 +63,16 @@ jobs:
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
-          ISSUE_IDENTIFIER="${{ steps.extract.outputs.issue_id }}"
+          ISSUE_ID="${{ steps.extract.outputs.issue_id }}"
           IS_MERGED="${{ github.event.pull_request.merged }}"
 
-          # Fetch the issue's internal UUID by identifier (e.g., GHT-10)
+          # Fetch the issue's internal UUID and team states
           ISSUE_DATA=$(curl -sf -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"query\": \"{ issues(filter: { identifier: { eq: \\\"$ISSUE_IDENTIFIER\\\" } }) { nodes { id team { id states { nodes { id name type } } } } } }\" }")
+            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id team { id states { nodes { id name type } } } } }\" }")
 
-          ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issues']['nodes'][0]['id'])")
+          ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
 
           if [ "$IS_MERGED" = "true" ]; then
             TARGET_STATE_ID=$(echo "$ISSUE_DATA" | python3 -c "
