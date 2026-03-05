@@ -98,31 +98,38 @@ jobs:
           RUN_URL="${{ steps.extract.outputs.run_url }}"
           BRANCH="${{ steps.extract.outputs.branch }}"
           
-          # Find the Linear issue ID
-          ISSUE_QUERY='{"query": "query { issues(filter: { identifier: { eq: \"'$ISSUE_KEY'\" } }) { nodes { id } } }"}'
-          ISSUE_RESPONSE=$(curl -s -X POST \
+          echo "Looking up Linear issue: $ISSUE_KEY"
+          
+          # Find the Linear issue ID by identifier
+          ISSUE_QUERY="{\"query\": \"{ issues(filter: { identifier: { eq: \\\"$ISSUE_KEY\\\" } }) { nodes { id } } }\"}"
+          ISSUE_RESPONSE=$(curl -sf -X POST \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$ISSUE_QUERY" \
             https://api.linear.app/graphql)
           
-          ISSUE_ID=$(echo "$ISSUE_RESPONSE" | jq -r '.data.issues.nodes[0].id')
+          echo "Linear API response: $ISSUE_RESPONSE"
+          
+          ISSUE_ID=$(echo "$ISSUE_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issues']['nodes'][0]['id'] if d.get('data', {}).get('issues', {}).get('nodes') else '')")
           
           if [ -z "$ISSUE_ID" ] || [ "$ISSUE_ID" = "null" ]; then
             echo "Could not find Linear issue $ISSUE_KEY"
             exit 0
           fi
           
-          # Add comment to Linear issue
-          COMMENT_QUERY='{"query": "mutation { commentCreate(input: { issueId: \"'$ISSUE_ID'\", body: \"## ❌ CI Failed\\n\\n**Branch:** '$BRANCH'\\n**Run:** '$RUN_URL'\\n\\nPlease fix CI issues before merging.\" }) { success } }"}'
+          echo "Found issue ID: $ISSUE_ID"
           
-          curl -s -X POST \
+          # Add comment to Linear issue
+          COMMENT_BODY="## CI Status Update\\n\\n**Branch:** $BRANCH\\n**Run:** $RUN_URL\\n\\nPlease check CI status."
+          COMMENT_QUERY="{\"query\": \"mutation { commentCreate(input: { issueId: \\\"$ISSUE_ID\\\", body: \\\"$COMMENT_BODY\\\" }) { success } }\"}"
+          
+          curl -sf -X POST \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$COMMENT_QUERY" \
             https://api.linear.app/graphql
           
-          echo "Updated Linear issue $ISSUE_KEY with CI failure notice"
+          echo "Updated Linear issue $ISSUE_KEY with CI notice"
 
   handle-success:
     name: Handle CI Success
