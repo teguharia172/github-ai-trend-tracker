@@ -28,6 +28,82 @@ This file provides persistent instructions for AI coding agents (Kimi Code, Clau
 
 ---
 
+## 🌿 Branch & PR Workflow (REQUIRED)
+
+**NEVER commit directly to `main`. Always use this workflow:**
+
+### Step-by-Step
+
+1. **Create branch** from main
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feat/GHT-XX-short-description
+   ```
+
+2. **Make changes** on the branch
+
+3. **Commit** with proper message
+   ```bash
+   git add .
+   git commit -m "feat(scope): description
+
+   Detailed explanation if needed.
+
+   Refs: GHT-XX"
+   ```
+
+4. **Push branch** to origin
+   ```bash
+   git push -u origin feat/GHT-XX-short-description
+   ```
+
+5. **Create Pull Request** via GitHub
+   - Title: Same as commit message subject
+   - Body: Link to Linear issue `Closes GHT-XX` or `Refs: GHT-XX`
+   - Request review if needed
+
+6. **Wait for CI to pass** ⏳
+   - CI runs automatically on PR
+   - Check the Actions tab: https://github.com/teguharia172/github-ai-trend-tracker/actions
+   - **DO NOT merge if CI is failing**
+
+7. **Merge** only after:
+   - [ ] All CI checks are green ✅
+   - [ ] Code review approved (if required)
+   - [ ] Linear issue updated with PR link
+
+### Branch Naming
+
+| Pattern | Example |
+|---------|---------|
+| `feat/GHT-XX-description` | `feat/GHT-42-add-sparkline-chart` |
+| `fix/GHT-XX-description` | `fix/GHT-17-fix-null-star-count` |
+| `chore/GHT-XX-description` | `chore/GHT-55-upgrade-dlt-version` |
+
+**Rules:**
+- Must start with type: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`
+- Must include `GHT-XX` issue reference
+- Lowercase, hyphen-separated description
+- Max 50 chars for description
+
+### If CI Fails
+
+1. **Check the error** — Click into the failed job in GitHub Actions
+2. **Fix locally** — Run the failing command (e.g., `make test`, `make lint`)
+3. **Commit fix** — Push to the same branch
+4. **Re-check CI** — Wait for green status
+5. **Document** — Add a comment to the Linear issue about what failed and how you fixed it
+
+**Common CI failures:**
+- `ruff check` — Lint errors, run `make format`
+- `black --check` — Format errors, run `make format`
+- `pytest` — Test failures, fix code
+- `commitlint` — Bad commit message, use `git commit --amend`
+- `dotenv import check` — Remove top-level dotenv imports from dashboard
+
+---
+
 ## 🤔 When to Ask vs. When to Act
 
 | Scenario | Action | Example |
@@ -417,6 +493,18 @@ Four PM-quality issue templates live in `.linear/`. Copy them into Linear via:
 ## 📋 Linear Workflow for Agents
 
 **GHT = GitHub AI Trend Tracker project** (Linear team key: `GHtrend`)
+
+### BEFORE Starting Any Work:
+
+**If no Linear issue exists, CREATE ONE FIRST:**
+
+1. **Create Linear issue** using `create_issue`
+   - Team ID: (ask user if unknown)
+   - Title: Clear description of the task
+   - Description: Acceptance criteria and context
+   - Priority: 1 (urgent), 2 (high), 3 (normal), 4 (low)
+
+2. **Use the new issue ID** (e.g., `GHT-XX`) for branch naming
 
 ### When Working on Any Task:
 
