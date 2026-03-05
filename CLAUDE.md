@@ -204,3 +204,9 @@ cd dbt && dbt build --target dev
 
 - **daily-ingestion.yml**: Runs daily at 2 AM UTC — ingests data + dbt build (prod)
 - **ci.yml**: Runs on PRs — lint, format check, pytest
+
+## Repo → Linear Mapping
+
+- GitHub repo: `teguharia172/github-ai-trend-tracker`
+- Linear team: **GHtrend** (key: `GHT`)
+- Linear project: **GH Trend Tracker**
