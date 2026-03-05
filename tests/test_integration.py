@@ -152,17 +152,23 @@ def sample_github_repos_data():
 class TestPipelineToDatabase:
     """Integration tests: Pipeline ingestion → Database storage."""
 
-    def test_pipeline_creates_raw_table(self, integration_duckdb, sample_github_repos_data):
+    def test_pipeline_creates_raw_table(
+        self, integration_duckdb, sample_github_repos_data
+    ):
         """Verify pipeline creates github_raw.repositories table with correct schema."""
         import pandas as pd
 
         # Simulate what the pipeline does: write to github_raw.repositories
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-        df = pd.DataFrame(sample_github_repos_data)
-        integration_duckdb.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
+        df = pd.DataFrame(sample_github_repos_data)  # noqa: F841
+        integration_duckdb.execute(
+            "CREATE TABLE github_raw.repositories AS SELECT * FROM df"
+        )
 
         # Verify data was written
-        result = integration_duckdb.execute("SELECT COUNT(*) FROM github_raw.repositories").fetchone()
+        result = integration_duckdb.execute(
+            "SELECT COUNT(*) FROM github_raw.repositories"
+        ).fetchone()
         assert result[0] == len(sample_github_repos_data)
 
         # Verify schema
@@ -175,14 +181,18 @@ class TestPipelineToDatabase:
         assert "name" in column_names
         assert "stargazers_count" in column_names
 
-    def test_pipeline_preserves_github_api_fields(self, integration_duckdb, sample_github_repos_data):
+    def test_pipeline_preserves_github_api_fields(
+        self, integration_duckdb, sample_github_repos_data
+    ):
         """Verify all important fields from GitHub API are preserved."""
         import pandas as pd
 
         # Simulate pipeline writing data
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-        df = pd.DataFrame([sample_github_repos_data[0]])
-        integration_duckdb.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
+        df = pd.DataFrame([sample_github_repos_data[0]])  # noqa: F841
+        integration_duckdb.execute(
+            "CREATE TABLE github_raw.repositories AS SELECT * FROM df"
+        )
 
         row = integration_duckdb.execute(
             "SELECT * FROM github_raw.repositories WHERE id = 1001"
@@ -191,7 +201,7 @@ class TestPipelineToDatabase:
 
         # Get column names
         columns = [desc[0] for desc in integration_duckdb.description]
-        row_dict = dict(zip(columns, row))
+        row_dict = dict(zip(columns, row))  # noqa: B905
 
         assert row_dict["name"] == "transformers"
         assert row_dict["stargazers_count"] == 150000
@@ -206,18 +216,23 @@ class TestDbtTransformations:
         """Get path to dbt project."""
         return Path(__file__).parent.parent / "dbt"
 
-    def test_staging_view_renames_columns(self, integration_duckdb, sample_github_repos_data):
+    def test_staging_view_renames_columns(
+        self, integration_duckdb, sample_github_repos_data
+    ):
         """Verify stg_repositories correctly renames columns."""
         import pandas as pd
 
         # Create raw table from DataFrame
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-        df = pd.DataFrame(sample_github_repos_data)
-        integration_duckdb.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
+        df = pd.DataFrame(sample_github_repos_data)  # noqa: F841
+        integration_duckdb.execute(
+            "CREATE TABLE github_raw.repositories AS SELECT * FROM df"
+        )
 
         # Create staging view (matching actual dbt model structure)
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-        integration_duckdb.execute("""
+        integration_duckdb.execute(
+            """
             CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
             SELECT
                 id,
@@ -244,7 +259,8 @@ class TestDbtTransformations:
                     NULLIF(EXTRACT(DAY FROM (CURRENT_TIMESTAMP - CAST(created_at AS TIMESTAMP))), 0) 
                     as stars_per_day
             FROM github_raw.repositories
-        """)
+        """
+        )
 
         # Verify the view works
         result = integration_duckdb.execute(
@@ -253,15 +269,20 @@ class TestDbtTransformations:
         assert result[0] == "huggingface"
         assert result[1] == 150000
 
-    def test_intermediate_filters_forks(self, integration_duckdb, sample_github_repos_data):
+    def test_intermediate_filters_forks(
+        self, integration_duckdb, sample_github_repos_data
+    ):
         """Verify int_repo_growth_metrics filters out forks."""
         # Setup staging
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-        df = pd.DataFrame(sample_github_repos_data)
-        integration_duckdb.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
+        df = pd.DataFrame(sample_github_repos_data)  # noqa: F841
+        integration_duckdb.execute(
+            "CREATE TABLE github_raw.repositories AS SELECT * FROM df"
+        )
 
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-        integration_duckdb.execute("""
+        integration_duckdb.execute(
+            """
             CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
             SELECT
                 id,
@@ -286,16 +307,19 @@ class TestDbtTransformations:
                 100 as repo_age_days,
                 10.0 as stars_per_day
             FROM github_raw.repositories
-        """)
+        """
+        )
 
         # Create intermediate view (simplified)
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_intermediate")
-        integration_duckdb.execute("""
+        integration_duckdb.execute(
+            """
             CREATE OR REPLACE VIEW prod_intermediate.int_repo_growth_metrics AS
             SELECT *
             FROM prod_staging.stg_repositories
             WHERE fork = FALSE AND archived = FALSE
-        """)
+        """
+        )
 
         # Verify forks are filtered
         result = integration_duckdb.execute(
@@ -320,12 +344,13 @@ def populated_database(integration_duckdb, sample_github_repos_data):
 
     # Create raw data
     db.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-    df = pd.DataFrame(sample_github_repos_data)
+    df = pd.DataFrame(sample_github_repos_data)  # noqa: F841
     db.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
 
     # Create staging
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-    db.execute("""
+    db.execute(
+        """
         CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
         SELECT
             id,
@@ -350,11 +375,13 @@ def populated_database(integration_duckdb, sample_github_repos_data):
             100 as repo_age_days,
             CAST(stargazers_count AS FLOAT) / 100.0 as stars_per_day
         FROM github_raw.repositories
-    """)
+    """
+    )
 
     # Create intermediate (filters forks)
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_intermediate")
-    db.execute("""
+    db.execute(
+        """
         CREATE OR REPLACE VIEW prod_intermediate.int_repo_growth_metrics AS
         SELECT *,
             CASE 
@@ -368,17 +395,21 @@ def populated_database(integration_duckdb, sample_github_repos_data):
             END as activity_status
         FROM prod_staging.stg_repositories
         WHERE fork = FALSE AND archived = FALSE
-    """)
+    """
+    )
 
     # Create marts tables
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_marts")
-    db.execute("""
+    db.execute(
+        """
         CREATE OR REPLACE TABLE prod_marts.dim_repositories AS
         SELECT *, CURRENT_TIMESTAMP as dbt_loaded_at
         FROM prod_intermediate.int_repo_growth_metrics
-    """)
+    """
+    )
 
-    db.execute("""
+    db.execute(
+        """
         CREATE OR REPLACE TABLE prod_marts.fct_language_trends AS
         SELECT 
             primary_language as language,
@@ -388,16 +419,19 @@ def populated_database(integration_duckdb, sample_github_repos_data):
         FROM prod_intermediate.int_repo_growth_metrics
         WHERE primary_language IS NOT NULL
         GROUP BY primary_language
-    """)
+    """
+    )
 
-    db.execute("""
+    db.execute(
+        """
         CREATE OR REPLACE TABLE prod_marts.fct_trending_repos AS
         SELECT 
             *,
             ROW_NUMBER() OVER (ORDER BY stars_per_day DESC) as rank_by_velocity
         FROM prod_intermediate.int_repo_growth_metrics
         ORDER BY stars_per_day DESC
-    """)
+    """
+    )
 
     return db
 
@@ -407,25 +441,29 @@ class TestDashboardQueries:
 
     def test_dashboard_header_metrics_query(self, populated_database):
         """Verify dashboard can query header metrics."""
-        result = populated_database.execute("""
+        result = populated_database.execute(
+            """
             SELECT 
                 COUNT(DISTINCT id) as total_repos,
                 SUM(stargazers_count) as total_stars,
                 SUM(forks_count) as total_forks
             FROM github_raw.repositories
-        """).fetchone()
+        """
+        ).fetchone()
 
         assert result[0] == 4  # Total repos including forks
         assert result[1] == 150000 + 85000 + 95000 + 100  # Sum of all stars
 
     def test_dashboard_trending_query(self, populated_database):
         """Verify dashboard trending tab query works."""
-        result = populated_database.execute("""
+        result = populated_database.execute(
+            """
             SELECT full_name, stars_count, stars_per_day, activity_status
             FROM prod_marts.fct_trending_repos
             ORDER BY rank_by_velocity
             LIMIT 10
-        """).fetchall()
+        """
+        ).fetchall()
 
         # Should have 3 non-fork repos
         assert len(result) == 3
@@ -434,11 +472,13 @@ class TestDashboardQueries:
 
     def test_dashboard_languages_query(self, populated_database):
         """Verify dashboard languages tab query works."""
-        result = populated_database.execute("""
+        result = populated_database.execute(
+            """
             SELECT language, repo_count, total_stars
             FROM prod_marts.fct_language_trends
             ORDER BY repo_count DESC
-        """).fetchall()
+        """
+        ).fetchall()
 
         # All 3 non-fork repos are Python
         assert len(result) == 1
@@ -448,12 +488,14 @@ class TestDashboardQueries:
     def test_dashboard_browse_all_query(self, populated_database):
         """Verify dashboard browse all tab query works with filters."""
         # Simulate the browse all query with activity filter
-        result = populated_database.execute("""
+        result = populated_database.execute(
+            """
             SELECT full_name, primary_language, stars_count, activity_status
             FROM prod_marts.dim_repositories
             WHERE activity_status = 'Very Active'
             ORDER BY stars_count DESC
-        """).fetchall()
+        """
+        ).fetchall()
 
         # All repos should be Very Active (recent pushed_at)
         assert len(result) == 3
@@ -472,9 +514,14 @@ class TestDataContracts:
             "license_type": "license__spdx_id (or license->>'spdx_id')",
         }
 
-        for staging_col, raw_source in expected_mappings.items():
+        for staging_col, _raw_source in expected_mappings.items():
             # Just verify the documentation is clear
-            assert staging_col in ["owner", "stars_count", "primary_language", "license_type"]
+            assert staging_col in [
+                "owner",
+                "stars_count",
+                "primary_language",
+                "license_type",
+            ]
 
     def test_mart_tables_have_required_columns(self, populated_database):
         """Verify all mart tables have the columns dashboard expects."""
@@ -488,8 +535,14 @@ class TestDataContracts:
         column_names = [c[0] for c in columns]
 
         required_dim_cols = [
-            "id", "full_name", "primary_language", "stars_count",
-            "forks_count", "activity_status", "description", "html_url"
+            "id",
+            "full_name",
+            "primary_language",
+            "stars_count",
+            "forks_count",
+            "activity_status",
+            "description",
+            "html_url",
         ]
         for col in required_dim_cols:
             assert col in column_names, f"Missing column {col} in dim_repositories"
@@ -511,8 +564,6 @@ class TestEndToEndFlow:
 
     def test_full_pipeline_dbt_dashboard_cycle(self, temp_duckdb_path):
         """Simulate a complete cycle: ingest → transform → query."""
-        from pipelines.github_ai_repos import run_pipeline
-
         # Step 1: Ingest data
         sample_data = [
             {
@@ -530,7 +581,10 @@ class TestEndToEndFlow:
                 "pushed_at": "2026-03-01T00:00:00Z",
                 "topics": ["machine-learning"],
                 "license": {"spdx_id": "MIT"},
-                "owner": {"login": "testuser", "avatar_url": "https://example.com/avatar"},
+                "owner": {
+                    "login": "testuser",
+                    "avatar_url": "https://example.com/avatar",
+                },
                 "archived": False,
                 "fork": False,
             }
@@ -546,174 +600,25 @@ class TestEndToEndFlow:
             mock_response.raise_for_status = MagicMock()
             mock_get.return_value = mock_response
 
-            run_pipeline(destination="duckdb", db_path=temp_duckdb_path, queries=["test"])
+            # Simulate pipeline writing data directly
+            conn = duckdb.connect(temp_duckdb_path)
+            try:
+                conn.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
+                import pandas as pd
 
-        # Step 2: Verify raw data exists
-        conn = duckdb.connect(temp_duckdb_path)
-        try:
-            count = conn.execute("SELECT COUNT(*) FROM github_raw.repositories").fetchone()[0]
-            assert count == 1
+                df = pd.DataFrame(sample_data)  # noqa: F841
+                conn.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
 
-            # Step 3: Simulate dashboard query
-            # (In real scenario, dbt would have created the marts)
-            repo = conn.execute(
-                "SELECT * FROM github_raw.repositories WHERE id = 2001"
-            ).fetchone()
-            assert repo is not None
+                # Step 2: Verify raw data exists
+                count = conn.execute(
+                    "SELECT COUNT(*) FROM github_raw.repositories"
+                ).fetchone()[0]
+                assert count == 1
 
-        finally:
-            conn.close()
-
-class TestDashboardQueries:
-    """Integration tests: Database → Dashboard data queries."""
-
-    def test_dashboard_header_metrics_query(self, populated_database):
-        """Verify dashboard can query header metrics."""
-        result = populated_database.execute("""
-            SELECT 
-                COUNT(DISTINCT id) as total_repos,
-                SUM(stargazers_count) as total_stars,
-                SUM(forks_count) as total_forks
-            FROM github_raw.repositories
-        """).fetchone()
-
-        assert result[0] == 4  # Total repos including forks
-        assert result[1] == 150000 + 85000 + 95000 + 100  # Sum of all stars
-
-    def test_dashboard_trending_query(self, populated_database):
-        """Verify dashboard trending tab query works."""
-        result = populated_database.execute("""
-            SELECT full_name, stars_count, stars_per_day, activity_status
-            FROM prod_marts.fct_trending_repos
-            ORDER BY rank_by_velocity
-            LIMIT 10
-        """).fetchall()
-
-        # Should have 3 non-fork repos
-        assert len(result) == 3
-        # transformers has highest stars_per_day (150000/100 = 1500)
-        assert result[0][0] == "huggingface/transformers"
-
-    def test_dashboard_languages_query(self, populated_database):
-        """Verify dashboard languages tab query works."""
-        result = populated_database.execute("""
-            SELECT language, repo_count, total_stars
-            FROM prod_marts.fct_language_trends
-            ORDER BY repo_count DESC
-        """).fetchall()
-
-        # All 3 non-fork repos are Python
-        assert len(result) == 1
-        assert result[0][0] == "Python"
-        assert result[0][1] == 3  # 3 Python repos
-
-    def test_dashboard_browse_all_query(self, populated_database):
-        """Verify dashboard browse all tab query works with filters."""
-        # Simulate the browse all query with activity filter
-        result = populated_database.execute("""
-            SELECT full_name, primary_language, stars_count, activity_status
-            FROM prod_marts.dim_repositories
-            WHERE activity_status = 'Very Active'
-            ORDER BY stars_count DESC
-        """).fetchall()
-
-        # All repos should be Very Active (recent pushed_at)
-        assert len(result) == 3
-
-
-class TestDataContracts:
-    """Tests for data contracts between layers."""
-
-    def test_raw_to_staging_column_mapping(self, integration_duckdb):
-        """Verify all staging columns have correct source in raw."""
-        # This test documents the expected column mappings
-        expected_mappings = {
-            "owner": "owner__login (or owner->>'login')",
-            "stars_count": "stargazers_count",
-            "primary_language": "language",
-            "license_type": "license__spdx_id (or license->>'spdx_id')",
-        }
-
-        for staging_col, raw_source in expected_mappings.items():
-            # Just verify the documentation is clear
-            assert staging_col in ["owner", "stars_count", "primary_language", "license_type"]
-
-    def test_mart_tables_have_required_columns(self, populated_database):
-        """Verify all mart tables have the columns dashboard expects."""
-        db = populated_database
-
-        # Check dim_repositories
-        columns = db.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'dim_repositories' AND table_schema = 'prod_marts'"
-        ).fetchall()
-        column_names = [c[0] for c in columns]
-
-        required_dim_cols = [
-            "id", "full_name", "primary_language", "stars_count",
-            "forks_count", "activity_status", "description", "html_url"
-        ]
-        for col in required_dim_cols:
-            assert col in column_names, f"Missing column {col} in dim_repositories"
-
-        # Check fct_trending_repos
-        columns = db.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'fct_trending_repos' AND table_schema = 'prod_marts'"
-        ).fetchall()
-        column_names = [c[0] for c in columns]
-
-        required_trending_cols = ["full_name", "stars_per_day", "rank_by_velocity"]
-        for col in required_trending_cols:
-            assert col in column_names, f"Missing column {col} in fct_trending_repos"
-
-
-class TestEndToEndFlow:
-    """Complete end-to-end tests simulating real usage."""
-
-    def test_full_pipeline_dbt_dashboard_cycle(self, temp_duckdb_path):
-        """Simulate a complete cycle: ingest → transform → query."""
-        import pandas as pd
-
-        # Step 1: Simulate ingestion (what pipeline does)
-        sample_data = [
-            {
-                "id": 2001,
-                "name": "test-ml-repo",
-                "full_name": "testuser/test-ml-repo",
-                "html_url": "https://github.com/testuser/test-ml-repo",
-                "description": "A test ML repo",
-                "language": "Python",
-                "stargazers_count": 5000,
-                "forks_count": 500,
-                "open_issues_count": 50,
-                "created_at": "2023-01-01T00:00:00Z",
-                "updated_at": "2026-03-01T00:00:00Z",
-                "pushed_at": "2026-03-01T00:00:00Z",
-                "topics": ["machine-learning"],
-                "license": {"spdx_id": "MIT"},
-                "owner": {"login": "testuser", "avatar_url": "https://example.com/avatar"},
-                "archived": False,
-                "fork": False,
-            }
-        ]
-
-        conn = duckdb.connect(temp_duckdb_path)
-        try:
-            # Write raw data
-            conn.execute("CREATE SCHEMA IF NOT EXISTS github_raw")
-            df = pd.DataFrame(sample_data)
-            conn.execute("CREATE TABLE github_raw.repositories AS SELECT * FROM df")
-
-            # Step 2: Verify raw data exists
-            count = conn.execute("SELECT COUNT(*) FROM github_raw.repositories").fetchone()[0]
-            assert count == 1
-
-            # Step 3: Simulate dashboard query
-            repo = conn.execute(
-                "SELECT * FROM github_raw.repositories WHERE id = 2001"
-            ).fetchone()
-            assert repo is not None
-
-        finally:
-            conn.close()
+                # Step 3: Simulate dashboard query
+                repo = conn.execute(
+                    "SELECT * FROM github_raw.repositories WHERE id = 2001"
+                ).fetchone()
+                assert repo is not None
+            finally:
+                conn.close()
