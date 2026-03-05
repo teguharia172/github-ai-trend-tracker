@@ -1,0 +1,128 @@
+name: Linear Issue Sync
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sync-linear:
+    name: Sync issue status & comment
+    runs-on: ubuntu-latest
+    # Only run when a LINEAR_API_KEY secret is configured
+    if: ${{ secrets.LINEAR_API_KEY != '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Extract Linear issue ID from branch
+        id: extract
+        run: |
+          # Support both push (GITHUB_REF_NAME) and PR (head_ref) events
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.head_ref }}"
+          else
+            BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          echo "Branch: $BRANCH"
+
+          # Extract GHT-XXX from branch name
+          ISSUE_ID=$(echo "$BRANCH" | grep -oE 'GHT-[0-9]+' | head -1)
+
+          if [ -z "$ISSUE_ID" ]; then
+            echo "No Linear issue ID found in branch '$BRANCH' — skipping"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found issue: $ISSUE_ID"
+            echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Capture commit context
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "author=$(git log -1 --pretty='%an')" >> "$GITHUB_OUTPUT"
+          echo "message=$(git log -1 --pretty='%s')" >> "$GITHUB_OUTPUT"
+
+      - name: Move Linear issue to In Progress
+        if: steps.extract.outputs.found == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          ISSUE_ID="${{ steps.extract.outputs.issue_id }}"
+
+          # Fetch the issue's internal UUID and current team
+          ISSUE_DATA=$(curl -sf -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id team { id states { nodes { id name } } } } }\" }" )
+
+          ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
+          IN_PROGRESS_ID=$(echo "$ISSUE_DATA" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          states = d['data']['issue']['team']['states']['nodes']
+          match = next((s['id'] for s in states if 'progress' in s['name'].lower()), None)
+          print(match or '')
+          ")
+
+          if [ -z "$IN_PROGRESS_ID" ]; then
+            echo "⚠️  Could not find 'In Progress' state — skipping status update"
+          else
+            curl -sf -X POST https://api.linear.app/graphql \
+              -H "Authorization: $LINEAR_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"query\": \"mutation { issueUpdate(id: \\\"$ISSUE_UUID\\\", input: { stateId: \\\"$IN_PROGRESS_ID\\\" }) { success } }\" }" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Moved to In Progress' if d['data']['issueUpdate']['success'] else '❌ Failed to update status')"
+          fi
+
+      - name: Post comment on Linear issue
+        if: steps.extract.outputs.found == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          ISSUE_ID="${{ steps.extract.outputs.issue_id }}"
+          SHA="${{ steps.extract.outputs.sha_short }}"
+          AUTHOR="${{ steps.extract.outputs.author }}"
+          MSG="${{ steps.extract.outputs.message }}"
+          EVENT="${{ github.event_name }}"
+
+          if [ "$EVENT" = "pull_request" ]; then
+            PR_NUM="${{ github.event.pull_request.number }}"
+            PR_URL="${{ github.event.pull_request.html_url }}"
+            COMMENT="🔀 **Pull Request #${PR_NUM} opened** on \`${{ github.head_ref }}\`
+
+          **Commit:** [\`${SHA}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          **Author:** ${AUTHOR}
+          **Message:** ${MSG}
+          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
+          else
+            COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+            COMMENT="🚀 **Commit pushed** to \`${GITHUB_REF_NAME}\`
+
+          **Commit:** [\`${SHA}\`](${COMMIT_URL})
+          **Author:** ${AUTHOR}
+          **Message:** ${MSG}
+          **Branch:** [View on GitHub](https://github.com/${{ github.repository }}/tree/${GITHUB_REF_NAME})"
+          fi
+
+          # Fetch issue UUID for the comment mutation
+          ISSUE_UUID=$(curl -sf -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id } }\" }" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
+
+          # Escape the comment body for JSON
+          ESCAPED_COMMENT=$(echo "$COMMENT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))")
+
+          curl -sf -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"mutation { commentCreate(input: { issueId: \\\"$ISSUE_UUID\\\", body: $ESCAPED_COMMENT }) { success } }\" }" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Comment posted' if d['data']['commentCreate']['success'] else '❌ Failed to post comment')"

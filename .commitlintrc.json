@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "type-enum": [
+      2,
+      "always",
+      ["feat", "fix", "chore", "docs", "refactor", "test", "ci", "perf"]
+    ],
+    "type-case": [2, "always", "lower-case"],
+    "type-empty": [2, "never"],
+    "scope-case": [2, "always", "lower-case"],
+    "scope-enum": [
+      1,
+      "always",
+      ["pipeline", "dbt", "dashboard", "infra", "tests", "docs"]
+    ],
+    "subject-empty": [2, "never"],
+    "subject-case": [2, "always", "lower-case"],
+    "subject-full-stop": [2, "never", "."],
+    "subject-max-length": [2, "always", 72],
+    "header-max-length": [2, "always", 100],
+    "body-leading-blank": [1, "always"],
+    "footer-leading-blank": [1, "always"]
+  }
+}

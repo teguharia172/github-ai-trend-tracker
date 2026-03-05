@@ -1,4 +1,10 @@
-# CLAUDE.md — Project Instructions for Claude Code
+# CLAUDE.md
+
+> **This file is no longer maintained.** See [AGENTS.md](./AGENTS.md) for all project instructions — it is the single source of truth for all AI coding agents (Claude Code, Kimi Code, GitHub Copilot, and others).
+
+---
+
+<!-- Legacy content preserved below for reference only — do not edit -->
 
 ## Project Overview
 
