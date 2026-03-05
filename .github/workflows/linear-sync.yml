@@ -5,7 +5,7 @@ on:
     branches-ignore:
       - main
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
   sync-linear:
@@ -49,36 +49,53 @@ jobs:
           echo "author=$(git log -1 --pretty='%an')" >> "$GITHUB_OUTPUT"
           echo "message=$(git log -1 --pretty='%s')" >> "$GITHUB_OUTPUT"
 
-      - name: Move Linear issue to In Progress
+      - name: Move Linear issue to In Progress or Done
         if: steps.extract.outputs.found == 'true'
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
           ISSUE_ID="${{ steps.extract.outputs.issue_id }}"
+          IS_MERGED="${{ github.event.pull_request.merged }}"
 
-          # Fetch the issue's internal UUID and current team
+          # Fetch the issue's internal UUID and team states
           ISSUE_DATA=$(curl -sf -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id team { id states { nodes { id name } } } } }\" }" )
+            -d "{\"query\": \"{ issue(id: \\\"$ISSUE_ID\\\") { id team { id states { nodes { id name type } } } } }\" }" )
 
           ISSUE_UUID=$(echo "$ISSUE_DATA" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['issue']['id'])")
-          IN_PROGRESS_ID=$(echo "$ISSUE_DATA" | python3 -c "
+
+          if [ "$IS_MERGED" = "true" ]; then
+            TARGET_STATE_ID=$(echo "$ISSUE_DATA" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          states = d['data']['issue']['team']['states']['nodes']
+          # prefer type=completed, fallback to name match
+          match = next((s['id'] for s in states if s.get('type') == 'completed'), None)
+          if not match:
+              match = next((s['id'] for s in states if 'done' in s['name'].lower()), None)
+          print(match or '')
+            ")
+            LABEL="Done"
+          else
+            TARGET_STATE_ID=$(echo "$ISSUE_DATA" | python3 -c "
           import sys, json
           d = json.load(sys.stdin)
           states = d['data']['issue']['team']['states']['nodes']
           match = next((s['id'] for s in states if 'progress' in s['name'].lower()), None)
           print(match or '')
-          ")
+            ")
+            LABEL="In Progress"
+          fi
 
-          if [ -z "$IN_PROGRESS_ID" ]; then
-            echo "⚠️  Could not find 'In Progress' state — skipping status update"
+          if [ -z "$TARGET_STATE_ID" ]; then
+            echo "⚠️  Could not find '$LABEL' state — skipping status update"
           else
             curl -sf -X POST https://api.linear.app/graphql \
               -H "Authorization: $LINEAR_API_KEY" \
               -H "Content-Type: application/json" \
-              -d "{\"query\": \"mutation { issueUpdate(id: \\\"$ISSUE_UUID\\\", input: { stateId: \\\"$IN_PROGRESS_ID\\\" }) { success } }\" }" \
-              | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Moved to In Progress' if d['data']['issueUpdate']['success'] else '❌ Failed to update status')"
+              -d "{\"query\": \"mutation { issueUpdate(id: \\\"$ISSUE_UUID\\\", input: { stateId: \\\"$TARGET_STATE_ID\\\" }) { success } }\" }" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Moved to $LABEL' if d['data']['issueUpdate']['success'] else '❌ Failed to update status')"
           fi
 
       - name: Post comment on Linear issue
@@ -95,20 +112,30 @@ jobs:
           if [ "$EVENT" = "pull_request" ]; then
             PR_NUM="${{ github.event.pull_request.number }}"
             PR_URL="${{ github.event.pull_request.html_url }}"
-            COMMENT="🔀 **Pull Request #${PR_NUM} opened** on \`${{ github.head_ref }}\`
+            IS_MERGED="${{ github.event.pull_request.merged }}"
+            if [ "$IS_MERGED" = "true" ]; then
+              COMMENT="✅ **Pull Request #${PR_NUM} merged** into \`main\`
 
-          **Commit:** [\`${SHA}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          **Author:** ${AUTHOR}
-          **Message:** ${MSG}
-          **PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
+**Commit:** [\`${SHA}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+**Author:** ${AUTHOR}
+**Message:** ${MSG}
+**PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
+            else
+              COMMENT="🔀 **Pull Request #${PR_NUM} opened** on \`${{ github.head_ref }}\`
+
+**Commit:** [\`${SHA}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+**Author:** ${AUTHOR}
+**Message:** ${MSG}
+**PR:** [#${PR_NUM} — View on GitHub](${PR_URL})"
+            fi
           else
             COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
             COMMENT="🚀 **Commit pushed** to \`${GITHUB_REF_NAME}\`
 
-          **Commit:** [\`${SHA}\`](${COMMIT_URL})
-          **Author:** ${AUTHOR}
-          **Message:** ${MSG}
-          **Branch:** [View on GitHub](https://github.com/${{ github.repository }}/tree/${GITHUB_REF_NAME})"
+**Commit:** [\`${SHA}\`](${COMMIT_URL})
+**Author:** ${AUTHOR}
+**Message:** ${MSG}
+**Branch:** [View on GitHub](https://github.com/${{ github.repository }}/tree/${GITHUB_REF_NAME})"
           fi
 
           # Fetch issue UUID for the comment mutation
