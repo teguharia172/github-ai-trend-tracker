@@ -2,6 +2,48 @@
 
 This file provides persistent instructions for AI coding agents (Kimi Code, Claude Code, etc.) when working on this project.
 
+> **For Agents:** Read this file completely before making any changes. When in doubt, ask the user rather than assume.
+
+---
+
+## 🚀 Quick Start for New Agents
+
+**First 5 minutes on this project:**
+
+1. **Read this file** (AGENTS.md) — You're doing it! ✅
+2. **Check the README.md** — For human-facing project overview
+3. **Understand the context** — What layer are you working on?
+   - `pipeline/` → Data ingestion (dlt, GitHub API)
+   - `dbt/` → Data transformation (SQL, models)
+   - `dashboard/` → Streamlit app (Python, visualization)
+   - `.github/workflows/` → CI/CD automation
+4. **Run the tests** — `make test` to verify everything works
+5. **Make your change** — Follow conventions below
+
+**Before submitting any change:**
+- [ ] Run `make test` — All tests pass
+- [ ] Run `make lint` — No lint errors
+- [ ] Follow commit convention: `type(scope): description` (e.g., `fix(dashboard): handle NaN in star count`)
+- [ ] Reference Linear issue in commit: `Refs: GHT-XX`
+
+---
+
+## 🤔 When to Ask vs. When to Act
+
+| Scenario | Action | Example |
+|----------|--------|---------|
+| Clear bug with stack trace | **Act** — Fix it | Dashboard crashes with `KeyError: 'stars_count'` |
+| Feature request with acceptance criteria | **Act** — Implement | Add new filter to Browse All tab |
+| Unclear requirements | **Ask** — Clarify first | "Make dashboard better" (too vague) |
+| Database schema change | **Ask** — Confirm impact | Adding new column to `fct_trending_repos` |
+| Changes to CI/CD or secrets | **Ask** — Security sensitive | Modifying GitHub Actions workflows |
+| Refactoring core pipeline logic | **Ask** — Verify approach | Changing how dlt merges repos |
+| Performance optimization | **Act** — But measure first | Slow query in dashboard |
+
+**Rule of thumb:** If the change affects multiple layers (pipeline → dbt → dashboard) or involves data integrity, ask first.
+
+---
+
 ## Project Overview
 
 **GitHub AI Trend Tracker** — A data pipeline that tracks AI/ML open source trends from GitHub, transforms data with dbt, and visualizes it in a Streamlit dashboard.
@@ -331,7 +373,123 @@ Four PM-quality issue templates live in `.linear/`. Copy them into Linear via:
 
 ---
 
+## 📁 File-Specific Guidance
+
+**When working on... read these files first:**
+
+| Task | Read First | Then Check |
+|------|------------|------------|
+| Pipeline ingestion | `pipelines/github_ai_repos.py` | `tests/test_pipeline.py` |
+| dbt models | `dbt/models/` structure | `dbt/models/intermediate/int_repo_growth_metrics.sql` (central hub) |
+| Dashboard changes | `dashboard/streamlit_app.py` | `tests/test_dashboard.py` |
+| New dbt model | `dbt/dbt_project.yml` | Similar existing models |
+| CI/CD changes | `.github/workflows/ci.yml` | `.github/workflows/daily-ingestion.yml` |
+| Environment setup | `.env.example` | `requirements.txt` |
+
+**Key architectural constraints:**
+- **dlt writes ONLY to `github_raw.repositories`** — Never modify this table directly
+- **All transformations go through dbt** — Add models, don't modify raw data
+- **Dashboard queries MotherDuck** — Use `@st.cache_data(ttl=300)` for all queries
+- **Tests mock external APIs** — Don't make real GitHub API calls in tests
+
+---
+
+## 🛠️ Troubleshooting Common Issues
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| `ModuleNotFoundError` | Not in venv or deps not installed | `source venv/bin/activate && pip install -r requirements.txt` |
+| `dbt not found` | dbt not installed or not in PATH | `pip install dbt-core dbt-duckdb && cd dbt && dbt deps` |
+| DuckDB connection fails | Wrong target or missing token | Check `.env` has `MOTHERDUCK_TOKEN` for prod, or use `dev` target |
+| Dashboard crashes on Streamlit Cloud | `python-dotenv` import issue | Ensure `dotenv` is in `requirements.txt` and imported conditionally |
+| dbt model fails | SQL syntax or missing refs | Run `dbt compile` to see generated SQL |
+| Tests fail with mock errors | Mock not set up correctly | Check `tests/conftest.py` for fixtures |
+| `make` command not found | Make not installed | Use direct commands (see Makefile contents) |
+
+**Getting help:**
+1. Check this AGENTS.md first
+2. Look at similar existing code
+3. Check tests for examples
+4. Ask the user if still stuck
+
+---
+
+## 📋 Linear Workflow for Agents
+
+**GHT = GitHub AI Trend Tracker project** (Linear team key: `GHtrend`)
+
+### When Working on Any Task:
+
+1. **At Start** — Update Linear issue to **"In Progress"**
+   - Use `update_issue` with the issue ID
+   - If status update fails, add a comment noting you've started
+
+2. **During Work** — Add progress comments for significant milestones
+   - Use `add_comment` with updates
+   - Reference any blockers or questions
+
+3. **At Completion** — Update Linear issue to **"Done"**
+   - Add a summary comment of what was completed
+   - Include commit message or PR link if applicable
+
+### Linear Naming Conventions:
+
+| Element | Format | Example |
+|---------|--------|---------|
+| Issue ID | `GHT-XX` | `GHT-17`, `GHT-42` |
+| Branch name | `{type}/GHT-XX-{description}` | `feat/GHT-17-enhance-agents-md` |
+| Commit reference | `Refs: GHT-XX` in footer | `Refs: GHT-17` |
+
+**Issue Types:**
+- `feat` — New feature
+- `fix` — Bug fix
+- `chore` — Maintenance, deps, config
+- `docs` — Documentation
+- `refactor` — Code restructuring
+- `test` — Tests
+- `ci` — CI/CD changes
+
+### Tool Calling Notes & Workarounds:
+
+**Known Issues:**
+
+| Tool | Issue | Workaround |
+|------|-------|------------|
+| `update_issue` (status) | May fail with "stateId must be a UUID" | Use `add_comment` to document status change instead; user can manually update |
+| `update_issue` (complex) | Some parameter combinations fail | Update one field at a time, or use comments |
+| `search_issues` | `milestone:` filter may not work | Search without filter, then manually filter results |
+
+**Best Practices:**
+- Always check tool results — don't assume success
+- If a tool fails, try an alternative (e.g., comment instead of status update)
+- Document tool failures in comments so user knows what happened
+
+---
+
+## 🤖 Agent-Specific Notes
+
+### For Claude Code
+- Use `ReadFile` with `line_offset` for large files
+- Parallel tool calls are encouraged for efficiency
+- Follow the project's Conventional Commits style strictly
+
+### For Kimi Code
+- Same conventions apply
+- Use `Glob` and `Grep` to explore the codebase
+- Update AGENTS.md if you find gaps
+
+### For All Agents
+- **Be concise** in responses — users prefer brevity
+- **Make minimal changes** — Don't over-engineer
+- **Test your changes** — Run relevant tests before finishing
+- **Update docs** — If you change how something works, update AGENTS.md
+- **Update Linear** — Follow the Linear workflow above for every task
+
+---
+
 ## Agent Docs
 
 `AGENTS.md` is the **single source of truth** for all AI coding agents.
 `CLAUDE.md` redirects here and should not be edited.
+
+**If you find this file is missing information or has errors, update it.** This is a living document.
