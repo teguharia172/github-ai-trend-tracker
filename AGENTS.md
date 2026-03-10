@@ -28,81 +28,108 @@ This file provides persistent instructions for AI coding agents (Kimi Code, Clau
 
 ---
 
+## 🚨 Hard Rules — Read Before Touching Any Code
+
+These are non-negotiable. Violating them breaks the review process and Linear sync.
+
+> **NEVER push directly to `main`.**
+> **NEVER self-merge your own PR.**
+> **ALWAYS open a PR. No exceptions.**
+
+If you find yourself running `git push origin main` — stop. You are doing it wrong.
+
+---
+
 ## 🌿 Branch & PR Workflow (REQUIRED)
 
-**NEVER commit directly to `main`. Always use this workflow:**
+### Step 1 — Create a branch
 
-### Step-by-Step
+```bash
+git checkout main && git pull origin main
+git checkout -b feat/GHT-XX-short-description
+```
 
-1. **Create branch** from main
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b feat/GHT-XX-short-description
-   ```
+Branch naming: **`{type}/GHT-XX-{short-description}`**
 
-2. **Make changes** on the branch
+| Type | Example branch |
+|------|---------------|
+| `feat` | `feat/GHT-42-add-sparkline-chart` |
+| `fix` | `fix/GHT-17-fix-null-star-count` |
+| `chore` | `chore/GHT-55-upgrade-dlt-version` |
+| `docs` | `docs/GHT-8-update-agents-md` |
+| `refactor` | `refactor/GHT-31-simplify-ingestion` |
+| `test` | `test/GHT-19-add-pipeline-tests` |
+| `ci` | `ci/GHT-60-add-branch-lint` |
 
-3. **Commit** with proper message
-   ```bash
-   git add .
-   git commit -m "feat(scope): description
+Rules: type prefix required · `GHT-XX` required · lowercase · hyphen-separated · max 50 chars for description
 
-   Detailed explanation if needed.
+### Step 2 — Make changes and commit
 
-   Refs: GHT-XX"
-   ```
+```bash
+git add <specific-files>
+git commit -m "feat(scope): description of change
 
-4. **Push branch** to origin
-   ```bash
-   git push -u origin feat/GHT-XX-short-description
-   ```
+Optional body explaining why.
 
-5. **Create Pull Request** via GitHub
-   - Title: Same as commit message subject
-   - Body: Link to Linear issue `Closes GHT-XX` or `Refs: GHT-XX`
-   - Request review if needed
+Refs: GHT-XX"
+```
 
-6. **Wait for CI to pass** ⏳
-   - CI runs automatically on PR
-   - Check the Actions tab: https://github.com/teguharia172/github-ai-trend-tracker/actions
-   - **DO NOT merge if CI is failing**
+> ⚠️ Subject must be **entirely lowercase** — `fix api` not `fix API`. Enforced by commitlint.
 
-7. **Merge** only after:
-   - [ ] All CI checks are green ✅
-   - [ ] Code review approved (if required)
-   - [ ] Linear issue updated with PR link
+### Step 3 — Push the branch
 
-### Branch Naming
+```bash
+git push -u origin feat/GHT-XX-short-description
+```
 
-| Pattern | Example |
-|---------|---------|
-| `feat/GHT-XX-description` | `feat/GHT-42-add-sparkline-chart` |
-| `fix/GHT-XX-description` | `fix/GHT-17-fix-null-star-count` |
-| `chore/GHT-XX-description` | `chore/GHT-55-upgrade-dlt-version` |
+### Step 4 — Open a Pull Request
 
-**Rules:**
-- Must start with type: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`
-- Must include `GHT-XX` issue reference
-- Lowercase, hyphen-separated description
-- Max 50 chars for description
+Use `gh pr create` with this exact format:
+
+```bash
+gh pr create --title "feat(scope): description of change" --body "$(cat <<'EOF'
+## Summary
+- What changed and why (bullet points)
+
+## Linear
+Closes GHT-XX
+
+## Test plan
+- [ ] `make test` passes
+- [ ] `make lint` passes
+- [ ] Relevant behaviour verified locally or in CI
+EOF
+)"
+```
+
+**PR rules:**
+- Title must match the commit subject (same conventional commit format)
+- Body must include `Closes GHT-XX` or `Refs: GHT-XX` — this is what triggers Linear sync
+- **Do NOT merge the PR yourself** — leave it for the user to review and merge
+
+### Step 5 — Wait for CI
+
+CI runs automatically on every PR. Check: https://github.com/teguharia172/github-ai-trend-tracker/actions
+
+**DO NOT merge if CI is red.** Fix the failure on the same branch and push again.
+
+**Common CI failures:**
+
+| Failure | Fix |
+|---------|-----|
+| `ruff check` | `make format` |
+| `black --check` | `make format` |
+| `pytest` | Fix the failing test |
+| `commitlint subject-case` | Subject must be all lowercase — `git commit --amend` |
+| `dotenv import check` | Remove top-level `dotenv` import from dashboard |
+| `linear-sync` | Uses `continue-on-error` — check if `curl -sf` was re-introduced (must be `curl -s`) |
 
 ### If CI Fails
 
-1. **Check the error** — Click into the failed job in GitHub Actions
-2. **Fix locally** — Run the failing command (e.g., `make test`, `make lint`)
-3. **Commit fix** — Push to the same branch
-4. **Re-check CI** — Wait for green status
-5. **Document** — Add a comment to the Linear issue about what failed and how you fixed it
-
-**Common CI failures:**
-- `ruff check` — Lint errors, run `make format`
-- `black --check` — Format errors, run `make format`
-- `pytest` — Test failures, fix code
-- `commitlint` — Bad commit message, use `git commit --amend`
-  - **Most common**: `subject-case` — subject must be all lowercase (e.g. `fix api` not `fix API`)
-- `dotenv import check` — Remove top-level dotenv imports from dashboard
-- `linear-sync` — Linear API call failed; uses `continue-on-error` so should not block, but check if `curl -sf` was accidentally re-introduced (must use `curl -s` with graceful error handling)
+1. Identify the failing step in GitHub Actions
+2. Fix locally, run `make test && make lint`
+3. Commit the fix and push to the **same branch** (do not open a new PR)
+4. CI re-runs automatically — wait for green
 
 ---
 
@@ -562,22 +589,24 @@ Four PM-quality issue templates live in `.linear/`. Copy them into Linear via:
 
 ## 🤖 Agent-Specific Notes
 
+### For All Agents — Non-Negotiable Rules
+
+- **No direct pushes to `main`** — Always branch → PR → let the user merge
+- **No self-merging** — Open the PR, then stop. The user merges.
+- **Always include `Closes GHT-XX` or `Refs: GHT-XX` in the PR body** — required for Linear sync
+- **Be concise** — Users prefer brevity over long explanations
+- **Make minimal changes** — Don't over-engineer or refactor beyond the task
+- **Test your changes** — Run `make test && make lint` before opening the PR
+- **Update AGENTS.md** — If you change how something works, document it here
+
 ### For Claude Code
-- Use `ReadFile` with `line_offset` for large files
+- Use `Read` with `offset`/`limit` for large files
 - Parallel tool calls are encouraged for efficiency
-- Follow the project's Conventional Commits style strictly
+- Follow Conventional Commits style strictly — subject all lowercase
 
 ### For Kimi Code
-- Same conventions apply
-- Use `Glob` and `Grep` to explore the codebase
-- Update AGENTS.md if you find gaps
-
-### For All Agents
-- **Be concise** in responses — users prefer brevity
-- **Make minimal changes** — Don't over-engineer
-- **Test your changes** — Run relevant tests before finishing
-- **Update docs** — If you change how something works, update AGENTS.md
-- **Update Linear** — Follow the Linear workflow above for every task
+- Use `Glob` and `Grep` to explore the codebase before making changes
+- Same branch/PR/commit conventions apply as above
 
 ---
 
