@@ -92,4 +92,4 @@ select
     row_number() over (order by stars_gained_1d desc nulls last) as rank_by_velocity
     
 from categorized
-order by stars_count desc
+order by stars_gained_1d desc nulls last

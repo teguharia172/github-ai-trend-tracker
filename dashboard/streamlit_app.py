@@ -348,7 +348,7 @@ def load_data():
     trending = conn.execute(
         """
         SELECT * FROM prod_marts.fct_trending_repos
-        ORDER BY stars_per_day DESC
+        ORDER BY stars_gained_1d DESC NULLS LAST
     """
     ).fetchdf()
 
