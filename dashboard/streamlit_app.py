@@ -27,7 +27,8 @@ try:
 except ImportError:
     import subprocess
 
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "duckdb", "--quiet"])
+    # Pin to DuckDB 1.4.4 for MotherDuck compatibility
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "duckdb==1.4.4", "--quiet"])
     import duckdb
 
 st.set_page_config(
