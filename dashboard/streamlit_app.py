@@ -443,8 +443,12 @@ def main():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Session state for repo comparison
+    if "compare_repos" not in st.session_state:
+        st.session_state.compare_repos = []
+
     # Tabs
-    tab1, tab2, tab3 = st.tabs(["Trending", "Languages", "Browse All"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Trending", "Languages", "Browse All", "Compare"])
 
     with tab1:
         st.markdown(
@@ -625,6 +629,130 @@ def main():
             """,
             unsafe_allow_html=True,
         )
+
+    with tab4:
+        st.markdown(
+            '<div class="section-title">Repository Comparison</div>',
+            unsafe_allow_html=True,
+        )
+
+        compare_repos = st.session_state.compare_repos
+
+        # Repo selection in Compare tab
+        st.markdown("**Select 2 repos to compare:**")
+        compare_col1, compare_col2 = st.columns(2)
+
+        selected_for_compare = list(compare_repos)  # Start with current selection
+        top_repos = filtered.head(20)  # Limit to top 20 for performance
+        max_selected = len(compare_repos) >= 2
+
+        with compare_col1:
+            for _, row in top_repos.head(10).iterrows():
+                repo_id = row["full_name"]
+                is_selected = repo_id in compare_repos
+                # Disable checkbox if already have 2 selected and this one isn't selected
+                disabled = max_selected and not is_selected
+
+                if disabled:
+                    st.checkbox(f"{repo_id}", value=is_selected, disabled=True, key=f"compare_disabled_{repo_id}")
+                else:
+                    if st.checkbox(f"{repo_id}", value=is_selected, key=f"compare_{repo_id}"):
+                        if repo_id not in selected_for_compare:
+                            selected_for_compare.append(repo_id)
+                    elif repo_id in selected_for_compare:
+                        selected_for_compare.remove(repo_id)
+
+        with compare_col2:
+            for _, row in top_repos.tail(10).iterrows():
+                repo_id = row["full_name"]
+                is_selected = repo_id in compare_repos
+                # Disable checkbox if already have 2 selected and this one isn't selected
+                disabled = max_selected and not is_selected
+
+                if disabled:
+                    st.checkbox(f"{repo_id}", value=is_selected, disabled=True, key=f"compare_disabled_{repo_id}")
+                else:
+                    if st.checkbox(f"{repo_id}", value=is_selected, key=f"compare_{repo_id}"):
+                        if repo_id not in selected_for_compare:
+                            selected_for_compare.append(repo_id)
+                    elif repo_id in selected_for_compare:
+                        selected_for_compare.remove(repo_id)
+
+        # Update session state (limit to 2)
+        st.session_state.compare_repos = selected_for_compare[:2]
+
+        if len(st.session_state.compare_repos) == 2:
+            st.success("✅ 2 repos selected! View comparison below.")
+        elif len(st.session_state.compare_repos) == 1:
+            st.info("ℹ️ Select 1 more repo to compare (select from above)")
+        else:
+            st.info("👆 Select 2 repositories above to compare them")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Show comparison table if 2 repos selected
+        if len(compare_repos) == 2:
+            # Get data for selected repos
+            repo1_data = filtered[filtered["full_name"] == compare_repos[0]].iloc[0]
+            repo2_data = filtered[filtered["full_name"] == compare_repos[1]].iloc[0]
+
+            # Build HTML comparison table to match Browse All styling
+            rows_html = ""
+            metrics = [
+                ("Repository", repo1_data["full_name"], repo2_data["full_name"]),
+                ("Language", repo1_data["primary_language"] or "—", repo2_data["primary_language"] or "—"),
+                ("Stars", f"{int(repo1_data['stars_count']):,}", f"{int(repo2_data['stars_count']):,}"),
+                ("Forks", f"{int(repo1_data['forks_count']):,}", f"{int(repo2_data['forks_count']):,}"),
+                ("Open Issues", f"{int(repo1_data['open_issues_count']):,}", f"{int(repo2_data['open_issues_count']):,}"),
+                ("Activity Status", repo1_data["activity_status"], repo2_data["activity_status"]),
+                ("Avg Daily Stars (7d)", f"{repo1_data.get('avg_daily_stars_7d', repo1_data.get('stars_per_day', 0)):.1f}", f"{repo2_data.get('avg_daily_stars_7d', repo2_data.get('stars_per_day', 0)):.1f}"),
+                ("Star/Fork Ratio", f"{repo1_data.get('star_to_fork_ratio', 0):.2f}", f"{repo2_data.get('star_to_fork_ratio', 0):.2f}"),
+            ]
+
+            for metric, val1, val2 in metrics:
+                rows_html += (
+                    f"<tr>"
+                    f"<td style='font-weight:600; color:#111;'>{metric}</td>"
+                    f"<td style='text-align:center;'>{val1}</td>"
+                    f"<td style='text-align:center;'>{val2}</td>"
+                    f"</tr>"
+                )
+
+            st.markdown(
+                f"""
+                <div style="border:1px solid #e5e5e5; margin-top:1rem;">
+                <table style="width:100%; border-collapse:collapse; background:#ffffff;">
+                    <thead>
+                        <tr style="background:#fafafa; border-bottom:2px solid #e5e5e5;">
+                            <th style="text-align:left; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; width:30%;">Metric</th>
+                            <th style="text-align:center; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; width:35%;">{compare_repos[0]}</th>
+                            <th style="text-align:center; padding:0.75rem 1rem; color:#333; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; width:35%;">{compare_repos[1]}</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color:#222; font-size:0.9rem;">
+                        {rows_html}
+                    </tbody>
+                </table>
+                </div>
+                <style>
+                    div.stMarkdown table tbody tr {{
+                        border-bottom: 1px solid #f0f0f0;
+                    }}
+                    div.stMarkdown table tbody td {{
+                        padding: 0.75rem 1rem;
+                    }}
+                    div.stMarkdown table tbody tr:hover {{
+                        background: #fafafa;
+                    }}
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Clear selection button
+            if st.button("Clear Selection", type="secondary"):
+                st.session_state.compare_repos = []
+                st.rerun()
 
     # Footer
     st.markdown(
