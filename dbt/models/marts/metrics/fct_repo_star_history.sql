@@ -8,6 +8,10 @@
     pre_hook = "
       {% if is_incremental() %}
         ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS snapshot_time TIMESTAMP;
+        ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS previous_stars BIGINT;
+        ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS previous_date DATE;
+        ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS days_since_last_snapshot INTEGER;
+        ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS stars_gained_1d BIGINT;
       {% endif %}
     "
   )
