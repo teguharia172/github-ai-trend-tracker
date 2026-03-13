@@ -345,14 +345,30 @@ def load_data():
     """
     ).fetchdf()
 
-    trending = conn.execute(
-        """
-        SELECT * FROM prod_marts.fct_trending_repos
-        ORDER BY stars_per_day DESC
-    """
-    ).fetchdf()
+    return repos, lang_trends
 
-    return repos, lang_trends, trending
+
+@st.cache_data(ttl=300)
+def load_trending(language_filter=None):
+    """Load trending repos with optional language filter."""
+    conn = get_connection()
+
+    if language_filter:
+        # Convert list to SQL IN clause
+        placeholders = ", ".join([f"'{lang}'" for lang in language_filter])
+        query = f"""
+            SELECT * FROM prod_marts.fct_trending_repos
+            WHERE primary_language IN ({placeholders})
+            ORDER BY stars_per_day DESC
+        """
+    else:
+        query = """
+            SELECT * FROM prod_marts.fct_trending_repos
+            ORDER BY stars_per_day DESC
+        """
+
+    trending = conn.execute(query).fetchdf()
+    return trending
 
 
 @st.cache_data(ttl=300)
@@ -389,7 +405,7 @@ def format_number(num):
 def main():
     # Load data
     try:
-        repos, lang_trends, trending = load_data()
+        repos, lang_trends = load_data()
         totals = load_totals()
     except Exception as e:
         st.error(f"Failed to load data: {e}")
@@ -410,6 +426,10 @@ def main():
         )
 
         min_stars = st.slider("Min Stars", 0, int(repos["stars_count"].max()), 0, 1000)
+
+    # Load trending with language filter applied
+    trending = load_trending(language_filter=lang_filter if lang_filter else None)
+    trending_total = load_trending()  # Load unfiltered for count comparison
 
     # Apply filters
     filtered = repos.copy()
@@ -447,8 +467,14 @@ def main():
     tab1, tab2, tab3 = st.tabs(["Trending", "Languages", "Browse All"])
 
     with tab1:
+        # Show filtered count if language filter is applied
+        if lang_filter and len(trending) < len(trending_total):
+            filter_info = f" ({len(trending)} of {len(trending_total)} repos — filtered by language)"
+        else:
+            filter_info = ""
+
         st.markdown(
-            '<div class="section-title">Trending by Velocity</div>',
+            f'<div class="section-title">Trending by Velocity{filter_info}</div>',
             unsafe_allow_html=True,
         )
 
