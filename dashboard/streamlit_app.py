@@ -452,7 +452,24 @@ def main():
             unsafe_allow_html=True,
         )
 
-        for _, r in trending.head(15).iterrows():
+        # Initialize pagination state
+        if "trending_page" not in st.session_state:
+            st.session_state.trending_page = 0
+
+        items_per_page = 15
+        total_items = len(trending)
+        total_pages = (total_items + items_per_page - 1) // items_per_page
+
+        # Ensure page is within bounds (in case data changes)
+        if st.session_state.trending_page >= total_pages:
+            st.session_state.trending_page = max(0, total_pages - 1)
+
+        # Calculate slice for current page
+        start_idx = st.session_state.trending_page * items_per_page
+        end_idx = min(start_idx + items_per_page, total_items)
+        page_data = trending.iloc[start_idx:end_idx]
+
+        for _, r in page_data.iterrows():
             desc = r.get("description", "") or "No description available"
             # Truncate description if too long
             if len(desc) > 120:
@@ -493,6 +510,44 @@ def main():
                 </div>
             </div>
             """,
+                unsafe_allow_html=True,
+            )
+
+        # Pagination controls
+        if total_pages > 1:
+            prev_disabled = st.session_state.trending_page == 0
+            next_disabled = st.session_state.trending_page >= total_pages - 1
+
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col1:
+                if st.button(
+                    "← Previous",
+                    disabled=prev_disabled,
+                    key="trending_prev",
+                    use_container_width=True,
+                ):
+                    st.session_state.trending_page -= 1
+                    st.rerun()
+            with col2:
+                st.markdown(
+                    f"<div style='text-align: center; padding-top: 0.5rem; color: #666; font-size: 0.9rem;'>"
+                    f"Page {st.session_state.trending_page + 1} of {total_pages} "
+                    f"({start_idx + 1}-{end_idx} of {total_items} repos)</div>",
+                    unsafe_allow_html=True,
+                )
+            with col3:
+                if st.button(
+                    "Next →",
+                    disabled=next_disabled,
+                    key="trending_next",
+                    use_container_width=True,
+                ):
+                    st.session_state.trending_page += 1
+                    st.rerun()
+        else:
+            st.markdown(
+                f"<div style='text-align: center; color: #888; font-size: 0.85rem; margin-top: 1rem;'>"
+                f"Showing all {total_items} repositories</div>",
                 unsafe_allow_html=True,
             )
 
