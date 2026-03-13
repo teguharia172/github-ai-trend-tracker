@@ -33,7 +33,7 @@ snapshot_7d_ago as (
             snapshot_date,
             row_number() over (
                 partition by repo_id
-                order by abs(snapshot_date - (current_date - interval '7 days'))
+                order by abs(date_diff('day', snapshot_date, current_date - interval '7 days'))
             ) as rn
         from {{ ref('fct_repo_star_history') }}
         where snapshot_date between current_date - interval '9 days'
@@ -55,7 +55,7 @@ snapshot_30d_ago as (
             snapshot_date,
             row_number() over (
                 partition by repo_id
-                order by abs(snapshot_date - (current_date - interval '30 days'))
+                order by abs(date_diff('day', snapshot_date, current_date - interval '30 days'))
             ) as rn
         from {{ ref('fct_repo_star_history') }}
         where snapshot_date between current_date - interval '32 days'
