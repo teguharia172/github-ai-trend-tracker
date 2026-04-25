@@ -309,6 +309,25 @@ st.markdown(
         color: #888;
         background: #ffffff !important;
     }
+
+    /* === SEARCH INPUT === */
+    div[data-testid="stTextInput"] input {
+        background-color: #ffffff !important;
+        color: #111111 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 4px !important;
+    }
+
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #111111 !important;
+        box-shadow: none !important;
+    }
+
+    .search-result-count {
+        font-size: 0.82rem;
+        color: #555555;
+        margin-bottom: 1rem;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -464,12 +483,16 @@ def main():
             unsafe_allow_html=True,
         )
 
-        search_query = st.text_input(
-            "Search repos",
-            placeholder="Search by name or description...",
-            key="trending_search",
-            label_visibility="collapsed",
-        )
+        search_col, btn_col = st.columns([6, 1])
+        with search_col:
+            search_query = st.text_input(
+                "Search repos",
+                placeholder="Search by name or description...",
+                key="trending_search",
+                label_visibility="collapsed",
+            )
+        with btn_col:
+            st.button("Search", use_container_width=True, key="trending_search_btn")
 
         # Initialize pagination state
         if "trending_page" not in st.session_state:
@@ -485,7 +508,10 @@ def main():
         trending_filtered = filter_trending_by_search(trending, search_query)
 
         if search_query.strip():
-            st.caption(f'{len(trending_filtered)} result(s) for "{search_query}"')
+            st.markdown(
+                f'<div class="search-result-count">{len(trending_filtered)} result(s) for <strong>"{search_query}"</strong></div>',
+                unsafe_allow_html=True,
+            )
 
         items_per_page = 15
         total_items = len(trending_filtered)
