@@ -106,6 +106,7 @@ def mock_duckdb_connection():
 
     trending_df = pd.DataFrame(
         {
+            "repo_name": ["llm-toolkit", "awesome-ml"],
             "full_name": ["org2/llm-toolkit", "user1/awesome-ml"],
             "primary_language": ["Rust", "Python"],
             "stars_count": [12000, 5000],

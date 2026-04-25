@@ -374,6 +374,18 @@ def load_totals():
     return totals.iloc[0]
 
 
+def filter_trending_by_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
+    if not query.strip():
+        return df
+    q = query.strip().lower()
+    mask = (
+        df["repo_name"].str.lower().str.contains(q, na=False, regex=False)
+        | df["full_name"].str.lower().str.contains(q, na=False, regex=False)
+        | df["description"].str.lower().str.contains(q, na=False, regex=False)
+    )
+    return df[mask]
+
+
 def format_number(num):
     """Format number for display - use exact count for smaller numbers"""
     if num >= 1_000_000:
@@ -452,104 +464,126 @@ def main():
             unsafe_allow_html=True,
         )
 
+        search_query = st.text_input(
+            "Search repos",
+            placeholder="Search by name or description...",
+            key="trending_search",
+            label_visibility="collapsed",
+        )
+
         # Initialize pagination state
         if "trending_page" not in st.session_state:
             st.session_state.trending_page = 0
+        if "trending_search_prev" not in st.session_state:
+            st.session_state.trending_search_prev = ""
+
+        # Reset pagination when search query changes
+        if search_query != st.session_state.trending_search_prev:
+            st.session_state.trending_page = 0
+            st.session_state.trending_search_prev = search_query
+
+        trending_filtered = filter_trending_by_search(trending, search_query)
+
+        if search_query.strip():
+            st.caption(f'{len(trending_filtered)} result(s) for "{search_query}"')
 
         items_per_page = 15
-        total_items = len(trending)
-        total_pages = (total_items + items_per_page - 1) // items_per_page
+        total_items = len(trending_filtered)
+        total_pages = max(1, (total_items + items_per_page - 1) // items_per_page)
 
         # Ensure page is within bounds (in case data changes)
         if st.session_state.trending_page >= total_pages:
             st.session_state.trending_page = max(0, total_pages - 1)
 
-        # Calculate slice for current page
-        start_idx = st.session_state.trending_page * items_per_page
-        end_idx = min(start_idx + items_per_page, total_items)
-        page_data = trending.iloc[start_idx:end_idx]
+        if total_items == 0:
+            st.info("No repos found matching your search.")
+        else:
+            # Calculate slice for current page
+            start_idx = st.session_state.trending_page * items_per_page
+            end_idx = min(start_idx + items_per_page, total_items)
+            page_data = trending_filtered.iloc[start_idx:end_idx]
 
-        for _, r in page_data.iterrows():
-            desc = r.get("description", "") or "No description available"
-            # Truncate description if too long
-            if len(desc) > 120:
-                desc = desc[:117] + "..."
+            for _, r in page_data.iterrows():
+                desc = r.get("description", "") or "No description available"
+                # Truncate description if too long
+                if len(desc) > 120:
+                    desc = desc[:117] + "..."
 
-            # Use ACTUAL 1-day star growth if available, fallback to lifetime average
-            stars_gained_1d = r.get("stars_gained_1d")
-            if pd.notna(stars_gained_1d) and stars_gained_1d:
-                daily_stars = stars_gained_1d
-                velocity_label = "new stars today"
-            else:
-                daily_stars = r.get("stars_per_day", 0)
-                velocity_label = "avg/day (lifetime)"
+                # Use ACTUAL 1-day star growth if available, fallback to lifetime average
+                stars_gained_1d = r.get("stars_gained_1d")
+                if pd.notna(stars_gained_1d) and stars_gained_1d:
+                    daily_stars = stars_gained_1d
+                    velocity_label = "new stars today"
+                else:
+                    daily_stars = r.get("stars_per_day", 0)
+                    velocity_label = "avg/day (lifetime)"
 
-            # Escape all user-supplied strings to prevent XSS
-            safe_desc = html.escape(desc)
-            safe_full_name = html.escape(str(r["full_name"]))
-            safe_html_url = html.escape(str(r["html_url"]))
-            safe_language = html.escape(str(r["primary_language"] or "Unknown"))
-            safe_activity = html.escape(str(r["activity_status"]))
+                # Escape all user-supplied strings to prevent XSS
+                safe_desc = html.escape(desc)
+                safe_full_name = html.escape(str(r["full_name"]))
+                safe_html_url = html.escape(str(r["html_url"]))
+                safe_language = html.escape(str(r["primary_language"] or "Unknown"))
+                safe_activity = html.escape(str(r["activity_status"]))
 
-            st.markdown(
-                f"""
-            <div class="repo-card">
-                <div class="repo-main">
-                    <div class="repo-title">
-                        <a href="{safe_html_url}" target="_blank">{safe_full_name}</a>
-                    </div>
-                    <div class="repo-desc">{safe_desc}</div>
-                    <div class="repo-meta">{safe_language} • {safe_activity}</div>
-                </div>
-                <div class="repo-stats">
-                    <div class="repo-stat-value">{format_number(r['stars_count'])}</div>
-                    <div class="repo-stat-label">stars</div>
-                    <br><br>
-                    <div class="repo-stat-value repo-velocity">+{daily_stars:.0f}</div>
-                    <div class="repo-stat-label">{velocity_label}</div>
-                </div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-
-        # Pagination controls
-        if total_pages > 1:
-            prev_disabled = st.session_state.trending_page == 0
-            next_disabled = st.session_state.trending_page >= total_pages - 1
-
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col1:
-                if st.button(
-                    "← Previous",
-                    disabled=prev_disabled,
-                    key="trending_prev",
-                    use_container_width=True,
-                ):
-                    st.session_state.trending_page -= 1
-                    st.rerun()
-            with col2:
                 st.markdown(
-                    f"<div style='text-align: center; padding-top: 0.5rem; color: #666; font-size: 0.9rem;'>"
-                    f"Page {st.session_state.trending_page + 1} of {total_pages} "
-                    f"({start_idx + 1}-{end_idx} of {total_items} repos)</div>",
+                    f"""
+                <div class="repo-card">
+                    <div class="repo-main">
+                        <div class="repo-title">
+                            <a href="{safe_html_url}" target="_blank">{safe_full_name}</a>
+                        </div>
+                        <div class="repo-desc">{safe_desc}</div>
+                        <div class="repo-meta">{safe_language} • {safe_activity}</div>
+                    </div>
+                    <div class="repo-stats">
+                        <div class="repo-stat-value">{format_number(r['stars_count'])}</div>
+                        <div class="repo-stat-label">stars</div>
+                        <br><br>
+                        <div class="repo-stat-value repo-velocity">+{daily_stars:.0f}</div>
+                        <div class="repo-stat-label">{velocity_label}</div>
+                    </div>
+                </div>
+                """,
                     unsafe_allow_html=True,
                 )
-            with col3:
-                if st.button(
-                    "Next →",
-                    disabled=next_disabled,
-                    key="trending_next",
-                    use_container_width=True,
-                ):
-                    st.session_state.trending_page += 1
-                    st.rerun()
-        else:
-            st.markdown(
-                f"<div style='text-align: center; color: #888; font-size: 0.85rem; margin-top: 1rem;'>"
-                f"Showing all {total_items} repositories</div>",
-                unsafe_allow_html=True,
-            )
+
+            # Pagination controls
+            if total_pages > 1:
+                prev_disabled = st.session_state.trending_page == 0
+                next_disabled = st.session_state.trending_page >= total_pages - 1
+
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col1:
+                    if st.button(
+                        "← Previous",
+                        disabled=prev_disabled,
+                        key="trending_prev",
+                        use_container_width=True,
+                    ):
+                        st.session_state.trending_page -= 1
+                        st.rerun()
+                with col2:
+                    st.markdown(
+                        f"<div style='text-align: center; padding-top: 0.5rem; color: #666; font-size: 0.9rem;'>"
+                        f"Page {st.session_state.trending_page + 1} of {total_pages} "
+                        f"({start_idx + 1}-{end_idx} of {total_items} repos)</div>",
+                        unsafe_allow_html=True,
+                    )
+                with col3:
+                    if st.button(
+                        "Next →",
+                        disabled=next_disabled,
+                        key="trending_next",
+                        use_container_width=True,
+                    ):
+                        st.session_state.trending_page += 1
+                        st.rerun()
+            else:
+                st.markdown(
+                    f"<div style='text-align: center; color: #888; font-size: 0.85rem; margin-top: 1rem;'>"
+                    f"Showing all {total_items} repositories</div>",
+                    unsafe_allow_html=True,
+                )
 
     with tab2:
         col1, col2 = st.columns([2, 1])
