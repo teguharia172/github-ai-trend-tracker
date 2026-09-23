@@ -63,3 +63,20 @@ jobs:
         run: |
           echo "✅ Data updated! Streamlit Cloud will auto-redeploy on next page load."
           echo "Dashboard: https://github-ai-trend-tracker.streamlit.app"
+
+  # GitHub auto-disables scheduled workflows after 60 days without repo activity
+  # (this happened on 2026-08-17). Re-enabling via the API on every run resets
+  # that inactivity timer so the daily schedule keeps firing without commits.
+  keepalive:
+    name: Keep scheduled workflow enabled
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable workflow to reset inactivity timer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X PUT \
+            "repos/${{ github.repository }}/actions/workflows/daily-ingestion.yml/enable"
+          echo "Keepalive OK: daily-ingestion.yml re-enabled"
