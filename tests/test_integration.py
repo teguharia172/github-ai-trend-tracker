@@ -12,6 +12,7 @@ Requirements:
 
 import os
 import tempfile
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -27,6 +28,11 @@ pytestmark = [
         reason="Integration tests disabled via SKIP_INTEGRATION_TESTS",
     ),
 ]
+
+# Relative to now so repos stay inside the 30-day 'Very Active' window
+RECENT_TIMESTAMP = (datetime.now(UTC) - timedelta(days=2)).strftime(
+    "%Y-%m-%dT%H:%M:%SZ"
+)
 
 
 @pytest.fixture()
@@ -60,8 +66,8 @@ def sample_github_repos_data():
             "forks_count": 30000,
             "open_issues_count": 1500,
             "created_at": "2018-10-29T00:00:00Z",
-            "updated_at": "2026-03-01T00:00:00Z",
-            "pushed_at": "2026-03-01T00:00:00Z",
+            "updated_at": RECENT_TIMESTAMP,
+            "pushed_at": RECENT_TIMESTAMP,
             "topics": ["nlp", "transformers", "pytorch"],
             "license": {"spdx_id": "Apache-2.0"},
             "owner": {
@@ -84,8 +90,8 @@ def sample_github_repos_data():
             "forks_count": 25000,
             "open_issues_count": 12000,
             "created_at": "2016-08-13T00:00:00Z",
-            "updated_at": "2026-03-01T00:00:00Z",
-            "pushed_at": "2026-03-01T00:00:00Z",
+            "updated_at": RECENT_TIMESTAMP,
+            "pushed_at": RECENT_TIMESTAMP,
             "topics": ["deep-learning", "pytorch", "ml"],
             "license": {"spdx_id": "BSD-3-Clause"},
             "owner": {
@@ -108,8 +114,8 @@ def sample_github_repos_data():
             "forks_count": 15000,
             "open_issues_count": 2000,
             "created_at": "2022-10-17T00:00:00Z",
-            "updated_at": "2026-03-01T00:00:00Z",
-            "pushed_at": "2026-03-01T00:00:00Z",
+            "updated_at": RECENT_TIMESTAMP,
+            "pushed_at": RECENT_TIMESTAMP,
             "topics": ["llm", "langchain", "ai"],
             "license": {"spdx_id": "MIT"},
             "owner": {
@@ -133,8 +139,8 @@ def sample_github_repos_data():
             "forks_count": 10,
             "open_issues_count": 0,
             "created_at": "2023-01-01T00:00:00Z",
-            "updated_at": "2026-03-01T00:00:00Z",
-            "pushed_at": "2026-03-01T00:00:00Z",
+            "updated_at": RECENT_TIMESTAMP,
+            "pushed_at": RECENT_TIMESTAMP,
             "topics": [],
             "license": {"spdx_id": "BSD-3-Clause"},
             "owner": {
@@ -577,8 +583,8 @@ class TestEndToEndFlow:
                 "forks_count": 500,
                 "open_issues_count": 50,
                 "created_at": "2023-01-01T00:00:00Z",
-                "updated_at": "2026-03-01T00:00:00Z",
-                "pushed_at": "2026-03-01T00:00:00Z",
+                "updated_at": RECENT_TIMESTAMP,
+                "pushed_at": RECENT_TIMESTAMP,
                 "topics": ["machine-learning"],
                 "license": {"spdx_id": "MIT"},
                 "owner": {

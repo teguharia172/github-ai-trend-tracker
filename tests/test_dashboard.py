@@ -42,7 +42,11 @@ def _make_trending_df() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "repo_name": ["llm-toolkit", "awesome-ml", "pytorch-vision"],
-            "full_name": ["org2/llm-toolkit", "user1/awesome-ml", "org3/pytorch-vision"],
+            "full_name": [
+                "org2/llm-toolkit",
+                "user1/awesome-ml",
+                "org3/pytorch-vision",
+            ],
             "description": [
                 "LLM development toolkit",
                 "An awesome ML framework",
@@ -66,22 +70,30 @@ class TestFilterTrendingBySearch:
     def test_empty_string_returns_all_rows(self):
         df = _make_trending_df()
         result = filter_trending_by_search(df, "")
-        pd.testing.assert_frame_equal(result.reset_index(drop=True), df.reset_index(drop=True))
+        pd.testing.assert_frame_equal(
+            result.reset_index(drop=True), df.reset_index(drop=True)
+        )
 
     def test_whitespace_spaces_returns_all_rows(self):
         df = _make_trending_df()
         result = filter_trending_by_search(df, "   ")
-        pd.testing.assert_frame_equal(result.reset_index(drop=True), df.reset_index(drop=True))
+        pd.testing.assert_frame_equal(
+            result.reset_index(drop=True), df.reset_index(drop=True)
+        )
 
     def test_whitespace_tab_returns_all_rows(self):
         df = _make_trending_df()
         result = filter_trending_by_search(df, "\t")
-        pd.testing.assert_frame_equal(result.reset_index(drop=True), df.reset_index(drop=True))
+        pd.testing.assert_frame_equal(
+            result.reset_index(drop=True), df.reset_index(drop=True)
+        )
 
     def test_whitespace_newline_returns_all_rows(self):
         df = _make_trending_df()
         result = filter_trending_by_search(df, "\n")
-        pd.testing.assert_frame_equal(result.reset_index(drop=True), df.reset_index(drop=True))
+        pd.testing.assert_frame_equal(
+            result.reset_index(drop=True), df.reset_index(drop=True)
+        )
 
     # ------------------------------------------------------------------
     # Case-insensitive matching per column (each query is unique to one col)
@@ -145,9 +157,6 @@ class TestFilterTrendingBySearch:
 
     def test_query_matching_subset_of_rows(self):
         """A query that matches 2 out of 3 rows returns exactly those 2."""
-        df = _make_trending_df()
-        # "toolkit" appears only in repo_name "llm-toolkit" and description "LLM development toolkit"
-        # which belong to the same row (index 0), so let's use a query that crosses two rows.
         df2 = pd.DataFrame(
             {
                 "repo_name": ["ml-project", "ml-utils", "unrelated"],
@@ -226,7 +235,9 @@ class TestFilterTrendingBySearch:
     # Regex metacharacter safety — must never crash on special chars
     # ------------------------------------------------------------------
 
-    @pytest.mark.parametrize("query", ["(", "[llm]", "c++", "torch.*", "gpt-4|gemini", "\\k"])
+    @pytest.mark.parametrize(
+        "query", ["(", "[llm]", "c++", "torch.*", "gpt-4|gemini", "\\k"]
+    )
     def test_regex_metacharacters_do_not_raise(self, query):
         """User input containing regex metacharacters must not raise re.error."""
         df = _make_trending_df()
