@@ -1,10 +1,15 @@
 """Tests for dashboard utility functions."""
 
+import duckdb
 import numpy as np
 import pandas as pd
 import pytest
 
-from dashboard.streamlit_app import filter_trending_by_search, format_number
+from dashboard.streamlit_app import (
+    TRENDING_QUERY,
+    filter_trending_by_search,
+    format_number,
+)
 
 
 class TestFormatNumber:
@@ -243,3 +248,40 @@ class TestFilterTrendingBySearch:
         df = _make_trending_df()
         result = filter_trending_by_search(df, query)
         assert isinstance(result, pd.DataFrame)
+
+
+def _run_trending_query(rows: list[tuple[str, int | None, float]]) -> list[str]:
+    """Run TRENDING_QUERY against an in-memory fct_trending_repos table."""
+    con = duckdb.connect(":memory:")
+    con.execute("CREATE SCHEMA prod_marts")
+    con.execute(
+        "CREATE TABLE prod_marts.fct_trending_repos "
+        "(full_name VARCHAR, stars_gained_1d BIGINT, stars_per_day DOUBLE)"
+    )
+    con.executemany("INSERT INTO prod_marts.fct_trending_repos VALUES (?, ?, ?)", rows)
+    return con.execute(TRENDING_QUERY).fetchdf()["full_name"].tolist()
+
+
+class TestTrendingQueryOrder:
+    """TRENDING_QUERY ranks by daily gain, falling back to lifetime velocity."""
+
+    def test_orders_by_daily_gain_when_available(self):
+        order = _run_trending_query([("a/slow", 5, 90.0), ("b/fast", 50, 1.0)])
+        assert order == ["b/fast", "a/slow"]
+
+    def test_falls_back_to_lifetime_velocity_when_daily_gain_missing(self):
+        """After a snapshot gap every stars_gained_1d is null (e.g. Sep 2026)."""
+        order = _run_trending_query(
+            [("a/low", None, 2.0), ("b/high", None, 40.0), ("c/mid", None, 9.0)]
+        )
+        assert order == ["b/high", "c/mid", "a/low"]
+
+    def test_repos_with_daily_gain_rank_before_repos_without(self):
+        order = _run_trending_query(
+            [
+                ("a/no-daily", None, 500.0),
+                ("b/daily", 1, 0.5),
+                ("c/no-daily", None, 3.0),
+            ]
+        )
+        assert order == ["b/daily", "a/no-daily", "c/no-daily"]
