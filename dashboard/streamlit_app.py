@@ -28,7 +28,9 @@ except ImportError:
     import subprocess
 
     # Pin to DuckDB 1.4.4 for MotherDuck compatibility
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "duckdb==1.4.4", "--quiet"])
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "duckdb==1.4.4", "--quiet"]
+    )
     import duckdb
 
 st.set_page_config(
@@ -350,26 +352,20 @@ def load_data():
     """Load data from database."""
     conn = get_connection()
 
-    repos = conn.execute(
-        """
+    repos = conn.execute("""
         SELECT * FROM prod_marts.dim_repositories
         ORDER BY stars_count DESC
-    """
-    ).fetchdf()
+    """).fetchdf()
 
-    lang_trends = conn.execute(
-        """
+    lang_trends = conn.execute("""
         SELECT * FROM prod_marts.fct_language_trends
         ORDER BY total_stars DESC
-    """
-    ).fetchdf()
+    """).fetchdf()
 
-    trending = conn.execute(
-        """
+    trending = conn.execute("""
         SELECT * FROM prod_marts.fct_trending_repos
         ORDER BY stars_gained_1d DESC NULLS LAST
-    """
-    ).fetchdf()
+    """).fetchdf()
 
     return repos, lang_trends, trending
 
@@ -379,16 +375,14 @@ def load_totals():
     """Load true totals from raw source (includes forks and archived)."""
     conn = get_connection()
 
-    totals = conn.execute(
-        """
+    totals = conn.execute("""
         SELECT 
             COUNT(DISTINCT id) as total_repos,
             COALESCE(SUM(stargazers_count), 0) as total_stars,
             COALESCE(SUM(forks_count), 0) as total_forks,
             COUNT(DISTINCT language) as total_languages
         FROM github_raw.repositories
-    """
-    ).fetchdf()
+    """).fetchdf()
 
     return totals.iloc[0]
 
