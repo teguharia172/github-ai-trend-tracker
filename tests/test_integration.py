@@ -237,8 +237,7 @@ class TestDbtTransformations:
 
         # Create staging view (matching actual dbt model structure)
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-        integration_duckdb.execute(
-            """
+        integration_duckdb.execute("""
             CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
             SELECT
                 id,
@@ -265,8 +264,7 @@ class TestDbtTransformations:
                     NULLIF(EXTRACT(DAY FROM (CURRENT_TIMESTAMP - CAST(created_at AS TIMESTAMP))), 0) 
                     as stars_per_day
             FROM github_raw.repositories
-        """
-        )
+        """)
 
         # Verify the view works
         result = integration_duckdb.execute(
@@ -287,8 +285,7 @@ class TestDbtTransformations:
         )
 
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-        integration_duckdb.execute(
-            """
+        integration_duckdb.execute("""
             CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
             SELECT
                 id,
@@ -313,19 +310,16 @@ class TestDbtTransformations:
                 100 as repo_age_days,
                 10.0 as stars_per_day
             FROM github_raw.repositories
-        """
-        )
+        """)
 
         # Create intermediate view (simplified)
         integration_duckdb.execute("CREATE SCHEMA IF NOT EXISTS prod_intermediate")
-        integration_duckdb.execute(
-            """
+        integration_duckdb.execute("""
             CREATE OR REPLACE VIEW prod_intermediate.int_repo_growth_metrics AS
             SELECT *
             FROM prod_staging.stg_repositories
             WHERE fork = FALSE AND archived = FALSE
-        """
-        )
+        """)
 
         # Verify forks are filtered
         result = integration_duckdb.execute(
@@ -355,8 +349,7 @@ def populated_database(integration_duckdb, sample_github_repos_data):
 
     # Create staging
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_staging")
-    db.execute(
-        """
+    db.execute("""
         CREATE OR REPLACE VIEW prod_staging.stg_repositories AS
         SELECT
             id,
@@ -381,13 +374,11 @@ def populated_database(integration_duckdb, sample_github_repos_data):
             100 as repo_age_days,
             CAST(stargazers_count AS FLOAT) / 100.0 as stars_per_day
         FROM github_raw.repositories
-    """
-    )
+    """)
 
     # Create intermediate (filters forks)
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_intermediate")
-    db.execute(
-        """
+    db.execute("""
         CREATE OR REPLACE VIEW prod_intermediate.int_repo_growth_metrics AS
         SELECT *,
             CASE 
@@ -401,21 +392,17 @@ def populated_database(integration_duckdb, sample_github_repos_data):
             END as activity_status
         FROM prod_staging.stg_repositories
         WHERE fork = FALSE AND archived = FALSE
-    """
-    )
+    """)
 
     # Create marts tables
     db.execute("CREATE SCHEMA IF NOT EXISTS prod_marts")
-    db.execute(
-        """
+    db.execute("""
         CREATE OR REPLACE TABLE prod_marts.dim_repositories AS
         SELECT *, CURRENT_TIMESTAMP as dbt_loaded_at
         FROM prod_intermediate.int_repo_growth_metrics
-    """
-    )
+    """)
 
-    db.execute(
-        """
+    db.execute("""
         CREATE OR REPLACE TABLE prod_marts.fct_language_trends AS
         SELECT 
             primary_language as language,
@@ -425,19 +412,16 @@ def populated_database(integration_duckdb, sample_github_repos_data):
         FROM prod_intermediate.int_repo_growth_metrics
         WHERE primary_language IS NOT NULL
         GROUP BY primary_language
-    """
-    )
+    """)
 
-    db.execute(
-        """
+    db.execute("""
         CREATE OR REPLACE TABLE prod_marts.fct_trending_repos AS
         SELECT 
             *,
             ROW_NUMBER() OVER (ORDER BY stars_per_day DESC) as rank_by_velocity
         FROM prod_intermediate.int_repo_growth_metrics
         ORDER BY stars_per_day DESC
-    """
-    )
+    """)
 
     return db
 
@@ -447,29 +431,25 @@ class TestDashboardQueries:
 
     def test_dashboard_header_metrics_query(self, populated_database):
         """Verify dashboard can query header metrics."""
-        result = populated_database.execute(
-            """
+        result = populated_database.execute("""
             SELECT 
                 COUNT(DISTINCT id) as total_repos,
                 SUM(stargazers_count) as total_stars,
                 SUM(forks_count) as total_forks
             FROM github_raw.repositories
-        """
-        ).fetchone()
+        """).fetchone()
 
         assert result[0] == 4  # Total repos including forks
         assert result[1] == 150000 + 85000 + 95000 + 100  # Sum of all stars
 
     def test_dashboard_trending_query(self, populated_database):
         """Verify dashboard trending tab query works."""
-        result = populated_database.execute(
-            """
+        result = populated_database.execute("""
             SELECT full_name, stars_count, stars_per_day, activity_status
             FROM prod_marts.fct_trending_repos
             ORDER BY rank_by_velocity
             LIMIT 10
-        """
-        ).fetchall()
+        """).fetchall()
 
         # Should have 3 non-fork repos
         assert len(result) == 3
@@ -478,13 +458,11 @@ class TestDashboardQueries:
 
     def test_dashboard_languages_query(self, populated_database):
         """Verify dashboard languages tab query works."""
-        result = populated_database.execute(
-            """
+        result = populated_database.execute("""
             SELECT language, repo_count, total_stars
             FROM prod_marts.fct_language_trends
             ORDER BY repo_count DESC
-        """
-        ).fetchall()
+        """).fetchall()
 
         # All 3 non-fork repos are Python
         assert len(result) == 1
@@ -494,14 +472,12 @@ class TestDashboardQueries:
     def test_dashboard_browse_all_query(self, populated_database):
         """Verify dashboard browse all tab query works with filters."""
         # Simulate the browse all query with activity filter
-        result = populated_database.execute(
-            """
+        result = populated_database.execute("""
             SELECT full_name, primary_language, stars_count, activity_status
             FROM prod_marts.dim_repositories
             WHERE activity_status = 'Very Active'
             ORDER BY stars_count DESC
-        """
-        ).fetchall()
+        """).fetchall()
 
         # All repos should be Very Active (recent pushed_at)
         assert len(result) == 3

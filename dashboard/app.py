@@ -42,8 +42,7 @@ def load_data():
     """Load data from database."""
     conn = get_connection()
 
-    repos = conn.execute(
-        """
+    repos = conn.execute("""
         SELECT 
             repo_id, full_name, html_url, description, primary_language,
             stars_count, forks_count, open_issues_count, created_at, updated_at,
@@ -51,28 +50,23 @@ def load_data():
             owner, license_name, star_to_fork_ratio
         FROM prod_marts.dim_repositories
         ORDER BY stars_count DESC
-    """
-    ).fetchdf()
+    """).fetchdf()
 
-    lang_trends = conn.execute(
-        """
+    lang_trends = conn.execute("""
         SELECT 
             language, repo_count, total_stars, avg_stars, avg_stars_per_day,
             pct_of_total_stars, total_forks, language_rank_by_stars
         FROM prod_marts.fct_language_trends
         ORDER BY total_stars DESC
-    """
-    ).fetchdf()
+    """).fetchdf()
 
-    trending = conn.execute(
-        """
+    trending = conn.execute("""
         SELECT 
             repo_id, full_name, primary_language, stars_count, stars_per_day,
             activity_status, ai_category, rank_by_velocity, html_url
         FROM prod_marts.fct_trending_repos
         ORDER BY stars_per_day DESC
-    """
-    ).fetchdf()
+    """).fetchdf()
 
     return repos, lang_trends, trending
 
