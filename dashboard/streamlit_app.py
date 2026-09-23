@@ -33,6 +33,13 @@ except ImportError:
     )
     import duckdb
 
+# Rank by real 1-day gain; when snapshots are missing (pipeline gap) the gain is
+# null, so fall back to lifetime stars/day, which is what the cards display then.
+TRENDING_QUERY = """
+    SELECT * FROM prod_marts.fct_trending_repos
+    ORDER BY stars_gained_1d DESC NULLS LAST, stars_per_day DESC NULLS LAST
+"""
+
 st.set_page_config(
     page_title="GitHub AI Trend Tracker",
     page_icon="◉",
@@ -362,10 +369,7 @@ def load_data():
         ORDER BY total_stars DESC
     """).fetchdf()
 
-    trending = conn.execute("""
-        SELECT * FROM prod_marts.fct_trending_repos
-        ORDER BY stars_gained_1d DESC NULLS LAST
-    """).fetchdf()
+    trending = conn.execute(TRENDING_QUERY).fetchdf()
 
     return repos, lang_trends, trending
 
